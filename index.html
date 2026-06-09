@@ -3,8 +3,8 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Sistem Pelaporan Lab | Anti-Plagiasi + Mobile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Sistem Pelaporan Lab | Neon Theme + Admin Mode</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -13,15 +13,11 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
-            user-select: none;
+            user-select: none; /* mencegah seleksi teks (opsional) */
             -webkit-user-select: none;
-            -webkit-touch-callout: none;
-            touch-action: manipulation;
-        }
-        img, div {
-            -webkit-tap-highlight-color: transparent;
         }
 
+        /* NEON THEME - DARK MODE (default) */
         body {
             background: linear-gradient(135deg, #0a0f1a 0%, #0c1220 100%);
             padding: 20px;
@@ -29,54 +25,37 @@
             border: 4px solid transparent;
             transition: background 0.3s, color 0.3s;
         }
-        #protectionOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            backdrop-filter: blur(20px);
-            z-index: 20000;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            color: white;
-            text-align: center;
-            font-size: 1.2rem;
-            gap: 20px;
-            padding: 20px;
-        }
-        #protectionOverlay button {
-            background: #ff006e;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 40px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
+
+        #ratingHistory, #avgRating, #topDevices {
+            color: #e0e0ff;
         }
 
-        #ratingHistory, #avgRating, #topDevices { color: #e0e0ff; }
         body.light {
             background: #eef2f5;
         }
-        body.light .quick-add-card, body.light .panel-card, body.light .filter-area,
-        body.light .toolbar .btn, body.light .gui-btn, body.light .report-card,
-        body.light .menu-bar, body.light .modal-content {
+        body.light .quick-add-card,
+        body.light .panel-card,
+        body.light .filter-area,
+        body.light .toolbar .btn,
+        body.light .gui-btn,
+        body.light .report-card,
+        body.light .menu-bar,
+        body.light .modal-content {
             background: rgba(255, 255, 255, 0.95);
             color: #1e293b;
             border-color: #3b82f6;
         }
-        body.light .history-item, body.light .komentar-item {
+        body.light .history-item,
+        body.light .komentar-item {
             background: #f8fafc !important;
             border-left-color: #3b82f6 !important;
             color: #1e293b !important;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
-        body.light .history-item .history-title, body.light .history-item .history-time,
-        body.light .komentar-item .komentar-time, body.light .komentar-item .komentar-text {
+        body.light .history-item .history-title,
+        body.light .history-item .history-time,
+        body.light .komentar-item .komentar-time,
+        body.light .komentar-item .komentar-text {
             color: #1e293b !important;
         }
         body.light .feedback-item {
@@ -84,22 +63,42 @@
             border: 1px solid #e2e8f0;
             color: #1e293b !important;
         }
-        body.light .feedback-item small { color: #475569 !important; }
-        body.light #ratingHistory, body.light #avgRating, body.light #topDevices { color: #1e293b !important; }
-        body.light .report-card, body.light .panel-card h3, body.light .filter-area span, body.light .menu-btn { color: #1e293b; }
-        body.light input, body.light textarea, body.light select {
+        body.light .feedback-item small {
+            color: #475569 !important;
+        }
+        body.light #ratingHistory,
+        body.light #avgRating,
+        body.light #topDevices {
+            color: #1e293b !important;
+        }
+        body.light .report-card,
+        body.light .panel-card h3,
+        body.light .filter-area span,
+        body.light .menu-btn {
+            color: #1e293b;
+        }
+        body.light input,
+        body.light textarea,
+        body.light select {
             background: white;
             color: #1e293b;
             border-color: #3b82f6;
         }
-        body.light .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        body.light .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
         body.light .dev-chip {
             background: white;
             border-color: #3b82f6;
         }
-        body.light .dev-chip .chip-name { color: #1e293b; }
-        body.light .dev-chip .chip-nim { color: #475569; }
+        body.light .dev-chip .chip-name {
+            color: #1e293b;
+        }
+        body.light .dev-chip .chip-nim {
+            color: #475569;
+        }
 
+        /* Animasi border merah */
         body.red-edge-alert {
             border-color: #ff006e;
             box-shadow: 0 0 20px rgba(255, 0, 110, 0.8);
@@ -113,6 +112,7 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 0, 110, 0); }
         }
 
+        /* Centang Hijau */
         .checkmark-overlay {
             position: fixed;
             top: 50%;
@@ -147,6 +147,7 @@
             to { stroke-dashoffset: 0; }
         }
 
+        /* Gear Proses */
         .process-animation-overlay {
             position: fixed;
             top: 50%;
@@ -177,6 +178,7 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Container dan Layout */
         .dashboard { display: block; }
         .container { max-width: 1600px; margin: 0 auto; }
         .header h1 {
@@ -388,17 +390,12 @@
     </style>
 </head>
 <body>
-<div id="protectionOverlay">
-    <div>⚠️ DETEKSI SCREENSHOT / DEBUGGING!</div>
-    <div>DILARANG MEMPLAGIASI, MEN-SCREENSHOT, ATAU MENCURI KONTEN.</div>
-    <button id="closeProtection">OK, Saya Mengerti</button>
-</div>
 <div class="dashboard">
     <div class="container">
         <div class="header-top" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
             <div class="header">
                 <h1>🔮 Sistem Pelaporan Kerusakan Perangkat Laboratorium</h1>
-                <p>Laporkan & kelola kerusakan | Proteksi Anti-Screenshot + Suara Peringatan</p>
+                <p>Laporkan & kelola kerusakan | Neon Theme + Admin Mode</p>
             </div>
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <button id="darkModeToggle" class="btn">🌓 Dark/Light</button>
@@ -512,175 +509,12 @@
                 <button id="clearFeedbackBtn" class="btn" style="margin-top:12px;">🗑️ Hapus Semua Feedback</button>
             </div>
         </div>
-        <footer>⚙️ Data tersimpan secara lokal | Suara & animasi aktif | Admin: Login (admin123) | Proteksi screenshot + suara peringatan aktif</footer>
+        <footer>⚙️ Data tersimpan secara lokal | Suara & animasi aktif | </footer>
     </div>
 </div>
 
 <script>
-    // ========== ANTI SCREENSHOT (Desktop + Mobile) DENGAN SUARA & PENGECUALIAN PROMPT ==========
-    (function antiScreenshot() {
-        let screenshotDetected = false;
-        let isPromptActive = false;  // Flag untuk menonaktifkan sementara deteksi saat prompt/alert
-        const overlay = document.getElementById('protectionOverlay');
-        const closeBtn = document.getElementById('closeProtection');
-        let lastBlurTime = 0;
-        let blurTimeout = null;
-        let lastVoiceTime = 0;
-        const VOICE_COOLDOWN = 3000;
-
-        function playWarningVoice() {
-            if (!window.speechSynthesis) return;
-            if (isPromptActive) return; // jangan bersuara saat prompt
-            const now = Date.now();
-            if (now - lastVoiceTime < VOICE_COOLDOWN) return;
-            lastVoiceTime = now;
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance("Hei kamu ngapain");
-            utterance.lang = "id-ID";
-            utterance.rate = 0.9;
-            utterance.volume = 1;
-            window.speechSynthesis.speak(utterance);
-        }
-
-        function showProtection() {
-            if (screenshotDetected) return;
-            if (isPromptActive) return; // jika sedang prompt, abaikan
-            screenshotDetected = true;
-            playWarningVoice();
-            overlay.style.display = 'flex';
-            document.body.style.filter = 'blur(8px)';
-            setTimeout(() => {
-                if (overlay.style.display === 'flex') {
-                    overlay.style.display = 'none';
-                    document.body.style.filter = '';
-                    screenshotDetected = false;
-                }
-            }, 5000);
-        }
-
-        // Fungsi untuk menonaktifkan sementara proteksi saat prompt
-        function withPromptProtection(fn) {
-            isPromptActive = true;
-            try {
-                fn();
-            } finally {
-                setTimeout(() => { isPromptActive = false; }, 500);
-            }
-        }
-
-        // Override fungsi prompt dan alert asli agar proteksi tidak aktif
-        const originalPrompt = window.prompt;
-        const originalAlert = window.alert;
-        window.prompt = function(message, defaultValue) {
-            let result;
-            withPromptProtection(() => {
-                result = originalPrompt(message, defaultValue);
-            });
-            return result;
-        };
-        window.alert = function(message) {
-            withPromptProtection(() => {
-                originalAlert(message);
-            });
-        };
-
-        // Deteksi PrintScreen & kombinasi
-        window.addEventListener('keydown', function(e) {
-            if (isPromptActive) return;
-            if (e.key === 'PrintScreen' || e.keyCode === 44) {
-                e.preventDefault();
-                showProtection();
-                return false;
-            }
-            if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) {
-                e.preventDefault();
-                showProtection();
-                return false;
-            }
-            if (e.key === 'PrtSc') {
-                e.preventDefault();
-                showProtection();
-                return false;
-            }
-            if (e.key === 'F12' || 
-                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) ||
-                (e.ctrlKey && (e.key === 'U' || e.key === 'u'))) {
-                e.preventDefault();
-                showProtection();
-                return false;
-            }
-        });
-
-        document.addEventListener('contextmenu', function(e) {
-            if (isPromptActive) return;
-            e.preventDefault();
-            showProtection();
-            return false;
-        });
-
-        setInterval(function() {
-            if (isPromptActive) return;
-            if (window.outerHeight - window.innerHeight > 100 || window.outerWidth - window.innerWidth > 100) {
-                showProtection();
-            }
-        }, 1500);
-
-        document.addEventListener('visibilitychange', function() {
-            if (isPromptActive) return;
-            if (document.hidden) {
-                lastBlurTime = Date.now();
-                if (blurTimeout) clearTimeout(blurTimeout);
-                blurTimeout = setTimeout(() => {
-                    if (Date.now() - lastBlurTime < 1000 && !isPromptActive) {
-                        showProtection();
-                    }
-                }, 200);
-            } else {
-                if (blurTimeout) clearTimeout(blurTimeout);
-                if (lastBlurTime && Date.now() - lastBlurTime < 800 && !isPromptActive) {
-                    showProtection();
-                }
-            }
-        });
-
-        window.addEventListener('blur', function() {
-            if (isPromptActive) return;
-            lastBlurTime = Date.now();
-            blurTimeout = setTimeout(() => {
-                if (Date.now() - lastBlurTime < 800 && !isPromptActive) {
-                    showProtection();
-                }
-            }, 300);
-        });
-        window.addEventListener('focus', function() {
-            if (isPromptActive) return;
-            if (blurTimeout) clearTimeout(blurTimeout);
-            if (lastBlurTime && Date.now() - lastBlurTime < 800 && !isPromptActive) {
-                showProtection();
-            }
-        });
-
-        window.addEventListener('keydown', function(e) {
-            if (isPromptActive) return;
-            if (e.keyCode === 175 || e.keyCode === 174) {
-                setTimeout(() => { showProtection(); }, 50);
-                return false;
-            }
-        });
-
-        document.querySelectorAll('img').forEach(img => {
-            img.addEventListener('contextmenu', (e) => e.preventDefault());
-            img.addEventListener('dragstart', (e) => e.preventDefault());
-        });
-
-        closeBtn.addEventListener('click', function() {
-            overlay.style.display = 'none';
-            document.body.style.filter = '';
-            screenshotDetected = false;
-        });
-    })();
-
-    // ========== SISTEM UTAMA (tidak berubah, dipertahankan) ==========
+    // ========== GLOBAL DATA ==========
     let allReports = [];
     let currentFilter = "semua";
     const STORAGE_KEY = "lab_equipment_reports";
@@ -693,6 +527,57 @@
 
     let isAdmin = false;
 
+    // ========== FUNGSI SUARA UNTUK PASSWORD SALAH ==========
+    function playVoiceWrongPassword() {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel(); // hentikan suara lain agar tidak bertabrakan
+        const utterance = new SpeechSynthesisUtterance("Hei kamu ngapain");
+        utterance.lang = "id-ID";
+        utterance.rate = 0.9;
+        utterance.volume = 1;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // ========== ADMIN LOGIN ==========
+    function checkAdminStatus() {
+        const saved = sessionStorage.getItem("lab_admin");
+        if (saved === "true") {
+            isAdmin = true;
+            document.getElementById('adminLoginBtn').classList.add('hidden');
+            document.getElementById('adminLogoutBtn').classList.remove('hidden');
+            document.getElementById('adminStatus').classList.remove('hidden');
+            document.getElementById('deleteAllBtn').style.display = 'inline-flex';
+        } else {
+            isAdmin = false;
+            document.getElementById('adminLoginBtn').classList.remove('hidden');
+            document.getElementById('adminLogoutBtn').classList.add('hidden');
+            document.getElementById('adminStatus').classList.add('hidden');
+            document.getElementById('deleteAllBtn').style.display = 'none';
+        }
+        renderAll();
+    }
+
+    function adminLogin() {
+        const pwd = prompt("Masukkan password admin:");
+        if (pwd === "admin123") {
+            sessionStorage.setItem("lab_admin", "true");
+            isAdmin = true;
+            checkAdminStatus();
+            showToast("Login admin berhasil! Anda sekarang memiliki akses penuh.", "🔓");
+        } else {
+            showToast("Password salah! Akses ditolak.", "❌");
+            playVoiceWrongPassword();  // Tambahan suara peringatan
+        }
+    }
+
+    function adminLogout() {
+        sessionStorage.removeItem("lab_admin");
+        isAdmin = false;
+        checkAdminStatus();
+        showToast("Anda telah keluar dari mode admin.", "🔒");
+    }
+
+    // ========== HELPER ==========
     function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m=> m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
     function saveAll() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allReports));
@@ -787,17 +672,26 @@
         cont.innerHTML = html;
     }
 
+    // ========== AUDIO & ANIMASI ==========
     let audioContext = null;
     function playBellSound() { try { if(!audioContext) audioContext=new (window.AudioContext||window.webkitAudioContext)(); if(audioContext.state==='suspended') audioContext.resume(); const now=audioContext.currentTime; const osc=audioContext.createOscillator(); const gain=audioContext.createGain(); osc.connect(gain); gain.connect(audioContext.destination); osc.frequency.value=880; gain.gain.setValueAtTime(0.3,now); gain.gain.exponentialRampToValueAtTime(0.0001,now+0.8); osc.start(); osc.stop(now+0.8); const osc2=audioContext.createOscillator(); const gain2=audioContext.createGain(); osc2.connect(gain2); gain2.connect(audioContext.destination); osc2.frequency.value=1320; gain2.gain.setValueAtTime(0.15,now); gain2.gain.exponentialRampToValueAtTime(0.0001,now+0.5); osc2.start(); osc2.stop(now+0.5); } catch(e){} }
     function playVoiceReportReceived() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Diterima"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
     function playVoiceProcess() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Diproses"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
     function playVoiceCompleted() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Selesai"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
     function playVoiceDelete() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Dihapus"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
-    function playVoiceRating() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Terima kasih sudah memberi rating"); u.lang="id-ID"; u.rate=0.9; window.speechSynthesis.speak(u); }
+    function playVoiceRating() {
+        if(!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance("Terima kasih sudah memberi rating");
+        u.lang = "id-ID";
+        u.rate = 0.9;
+        window.speechSynthesis.speak(u);
+    }
     function showCheckmarkAnimation() { const ex=document.querySelector('.checkmark-overlay'); if(ex) ex.remove(); const div=document.createElement('div'); div.className='checkmark-overlay'; div.innerHTML='<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'; document.body.appendChild(div); div.offsetHeight; div.classList.add('show'); setTimeout(()=>{ div.classList.remove('show'); setTimeout(()=>div.remove(),500); },1500); }
     function showProcessAnimation() { const ex=document.querySelector('.process-animation-overlay'); if(ex) ex.remove(); const div=document.createElement('div'); div.className='process-animation-overlay'; div.innerHTML='<div style="text-align:center;"><div class="gear-icon">⚙️</div><div class="process-text">Memproses...</div></div>'; document.body.appendChild(div); div.offsetHeight; div.classList.add('show'); setTimeout(()=>{ div.classList.remove('show'); setTimeout(()=>div.remove(),800); },1300); }
     function showToast(msg, icon="✅") { const toast=document.createElement('div'); toast.className='toast-notification'; toast.innerHTML=`<span>${icon}</span> <span>${msg}</span>`; document.body.appendChild(toast); toast.offsetHeight; toast.classList.add('show'); setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>toast.remove(),3500); },3500); }
 
+    // ========== CRUD ==========
     function addReport(namaPelapor, namaAlat, lokasi, deskripsi, selectedDateValue, priority) {
         if(!namaPelapor.trim() || !namaAlat.trim() || !deskripsi.trim()) { showToast("Isi semua field","⚠️"); return false; }
         let tanggalDisplay = selectedDateValue ? (new Date(selectedDateValue).toLocaleString('id-ID') || new Date().toLocaleString('id-ID')) : new Date().toLocaleString('id-ID');
@@ -999,38 +893,7 @@
     });
     document.getElementById('clearFeedbackBtn')?.addEventListener('click',()=>clearAllFeedbacks());
 
-    function checkAdminStatus() {
-        const saved = sessionStorage.getItem("lab_admin");
-        if (saved === "true") {
-            isAdmin = true;
-            document.getElementById('adminLoginBtn').classList.add('hidden');
-            document.getElementById('adminLogoutBtn').classList.remove('hidden');
-            document.getElementById('adminStatus').classList.remove('hidden');
-            document.getElementById('deleteAllBtn').style.display = 'inline-flex';
-        } else {
-            isAdmin = false;
-            document.getElementById('adminLoginBtn').classList.remove('hidden');
-            document.getElementById('adminLogoutBtn').classList.add('hidden');
-            document.getElementById('adminStatus').classList.add('hidden');
-            document.getElementById('deleteAllBtn').style.display = 'none';
-        }
-        renderAll();
-    }
-    function adminLogin() {
-        const pwd = prompt("Masukkan password admin:");
-        if (pwd === "admin123") {
-            sessionStorage.setItem("lab_admin", "true");
-            checkAdminStatus();
-            showToast("Login admin berhasil! Anda sekarang memiliki akses penuh.", "🔓");
-        } else {
-            showToast("Password salah! Akses ditolak.", "❌");
-        }
-    }
-    function adminLogout() {
-        sessionStorage.removeItem("lab_admin");
-        checkAdminStatus();
-        showToast("Anda telah keluar dari mode admin.", "🔒");
-    }
+    // Admin event
     document.getElementById('adminLoginBtn')?.addEventListener('click', adminLogin);
     document.getElementById('adminLogoutBtn')?.addEventListener('click', adminLogout);
 
