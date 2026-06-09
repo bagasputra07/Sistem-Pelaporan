@@ -517,18 +517,20 @@
 </div>
 
 <script>
-    // ========== ANTI SCREENSHOT (Desktop + Mobile) DENGAN SUARA ==========
+    // ========== ANTI SCREENSHOT (Desktop + Mobile) DENGAN SUARA & PENGECUALIAN PROMPT ==========
     (function antiScreenshot() {
         let screenshotDetected = false;
+        let isPromptActive = false;  // Flag untuk menonaktifkan sementara deteksi saat prompt/alert
         const overlay = document.getElementById('protectionOverlay');
         const closeBtn = document.getElementById('closeProtection');
         let lastBlurTime = 0;
         let blurTimeout = null;
         let lastVoiceTime = 0;
-        const VOICE_COOLDOWN = 3000; // 3 detik
+        const VOICE_COOLDOWN = 3000;
 
         function playWarningVoice() {
             if (!window.speechSynthesis) return;
+            if (isPromptActive) return; // jangan bersuara saat prompt
             const now = Date.now();
             if (now - lastVoiceTime < VOICE_COOLDOWN) return;
             lastVoiceTime = now;
@@ -542,6 +544,7 @@
 
         function showProtection() {
             if (screenshotDetected) return;
+            if (isPromptActive) return; // jika sedang prompt, abaikan
             screenshotDetected = true;
             playWarningVoice();
             overlay.style.display = 'flex';
@@ -555,8 +558,35 @@
             }, 5000);
         }
 
+        // Fungsi untuk menonaktifkan sementara proteksi saat prompt
+        function withPromptProtection(fn) {
+            isPromptActive = true;
+            try {
+                fn();
+            } finally {
+                setTimeout(() => { isPromptActive = false; }, 500);
+            }
+        }
+
+        // Override fungsi prompt dan alert asli agar proteksi tidak aktif
+        const originalPrompt = window.prompt;
+        const originalAlert = window.alert;
+        window.prompt = function(message, defaultValue) {
+            let result;
+            withPromptProtection(() => {
+                result = originalPrompt(message, defaultValue);
+            });
+            return result;
+        };
+        window.alert = function(message) {
+            withPromptProtection(() => {
+                originalAlert(message);
+            });
+        };
+
         // Deteksi PrintScreen & kombinasi
         window.addEventListener('keydown', function(e) {
+            if (isPromptActive) return;
             if (e.key === 'PrintScreen' || e.keyCode === 44) {
                 e.preventDefault();
                 showProtection();
@@ -581,64 +611,63 @@
             }
         });
 
-        // Cegah klik kanan
         document.addEventListener('contextmenu', function(e) {
+            if (isPromptActive) return;
             e.preventDefault();
             showProtection();
             return false;
         });
 
-        // Deteksi DevTools
         setInterval(function() {
+            if (isPromptActive) return;
             if (window.outerHeight - window.innerHeight > 100 || window.outerWidth - window.innerWidth > 100) {
                 showProtection();
             }
         }, 1500);
 
-        // Deteksi visibility change (mobile)
         document.addEventListener('visibilitychange', function() {
+            if (isPromptActive) return;
             if (document.hidden) {
                 lastBlurTime = Date.now();
                 if (blurTimeout) clearTimeout(blurTimeout);
                 blurTimeout = setTimeout(() => {
-                    if (Date.now() - lastBlurTime < 1000) {
+                    if (Date.now() - lastBlurTime < 1000 && !isPromptActive) {
                         showProtection();
                     }
                 }, 200);
             } else {
                 if (blurTimeout) clearTimeout(blurTimeout);
-                if (lastBlurTime && Date.now() - lastBlurTime < 800) {
+                if (lastBlurTime && Date.now() - lastBlurTime < 800 && !isPromptActive) {
                     showProtection();
                 }
             }
         });
 
         window.addEventListener('blur', function() {
+            if (isPromptActive) return;
             lastBlurTime = Date.now();
             blurTimeout = setTimeout(() => {
-                if (Date.now() - lastBlurTime < 800) {
+                if (Date.now() - lastBlurTime < 800 && !isPromptActive) {
                     showProtection();
                 }
             }, 300);
         });
         window.addEventListener('focus', function() {
+            if (isPromptActive) return;
             if (blurTimeout) clearTimeout(blurTimeout);
-            if (lastBlurTime && Date.now() - lastBlurTime < 800) {
+            if (lastBlurTime && Date.now() - lastBlurTime < 800 && !isPromptActive) {
                 showProtection();
             }
         });
 
-        // Deteksi tombol volume (Android)
         window.addEventListener('keydown', function(e) {
+            if (isPromptActive) return;
             if (e.keyCode === 175 || e.keyCode === 174) {
-                setTimeout(() => {
-                    showProtection();
-                }, 50);
+                setTimeout(() => { showProtection(); }, 50);
                 return false;
             }
         });
 
-        // Cegah aksi pada gambar
         document.querySelectorAll('img').forEach(img => {
             img.addEventListener('contextmenu', (e) => e.preventDefault());
             img.addEventListener('dragstart', (e) => e.preventDefault());
@@ -651,7 +680,7 @@
         });
     })();
 
-    // ========== SISTEM UTAMA (tidak berubah) ==========
+    // ========== SISTEM UTAMA (tidak berubah, dipertahankan) ==========
     let allReports = [];
     let currentFilter = "semua";
     const STORAGE_KEY = "lab_equipment_reports";
@@ -1029,4 +1058,3 @@
 </script>
 </body>
 </html>
-
