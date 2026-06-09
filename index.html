@@ -1,13 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Sistem Pelaporan Lab | Neon Theme + Feedback</title>
+    <title>Sistem Pelaporan Lab | Neon Theme + Admin Mode</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -25,7 +23,10 @@
             transition: background 0.3s, color 0.3s;
         }
 
-        /* LIGHT MODE - Semua background diganti terang, teks gelap */
+        #ratingHistory, #avgRating, #topDevices {
+            color: #e0e0ff;
+        }
+
         body.light {
             background: #eef2f5;
         }
@@ -41,7 +42,6 @@
             color: #1e293b;
             border-color: #3b82f6;
         }
-        /* History item - light mode */
         body.light .history-item,
         body.light .komentar-item {
             background: #f8fafc !important;
@@ -55,7 +55,6 @@
         body.light .komentar-item .komentar-text {
             color: #1e293b !important;
         }
-        /* Feedback list - light mode */
         body.light .feedback-item {
             background: #f8fafc !important;
             border: 1px solid #e2e8f0;
@@ -64,14 +63,19 @@
         body.light .feedback-item small {
             color: #475569 !important;
         }
+        body.light #ratingHistory,
+        body.light #avgRating,
+        body.light #topDevices {
+            color: #1e293b !important;
+        }
         body.light .report-card,
         body.light .panel-card h3,
         body.light .filter-area span,
         body.light .menu-btn {
             color: #1e293b;
         }
-        body.light input, 
-        body.light textarea, 
+        body.light input,
+        body.light textarea,
         body.light select {
             background: white;
             color: #1e293b;
@@ -90,6 +94,7 @@
         body.light .dev-chip .chip-nim {
             color: #475569;
         }
+
         /* Animasi border merah */
         body.red-edge-alert {
             border-color: #ff006e;
@@ -170,7 +175,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Container dan Layout */
         .dashboard { display: block; }
         .container { max-width: 1600px; margin: 0 auto; }
         .header h1 {
@@ -232,7 +236,6 @@
             padding-left: 12px;
             color: #00f5d4;
         }
-        /* Style scroll untuk history dan komentar (sama) */
         .history-list, .komentar-list {
             max-height: 400px;
             overflow-y: auto;
@@ -262,7 +265,6 @@
         }
         .feedback-item small { color: #88aaff; }
 
-        /* Form */
         input, textarea, select {
             width: 100%;
             padding: 10px 14px;
@@ -281,7 +283,6 @@
         }
         label { color: #00f5d4; font-weight: 500; margin-bottom: 5px; display: block; }
 
-        /* Tombol */
         .btn, .gui-btn {
             background: rgba(0, 20, 30, 0.8);
             border: 1px solid #00b4d8;
@@ -352,6 +353,14 @@
         .dev-chip .chip-name { font-weight: 700; color: #00f5d4; }
         .dev-chip .chip-nim { font-size: 0.65rem; color: #ffb3c6; }
 
+        .admin-badge {
+            background: #ff006e;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
         .toast-notification {
             position: fixed;
             bottom: 20px;
@@ -368,8 +377,8 @@
             box-shadow: 0 0 20px rgba(0, 245, 212, 0.5);
         }
         .toast-notification.show { transform: translateX(0); }
-
         footer { text-align: center; margin-top: 2rem; font-size: 0.7rem; color: #6c8db0; }
+
         @media (max-width: 800px) {
             .main-layout { grid-template-columns: 1fr; }
             .right-panels { order: -1; }
@@ -382,10 +391,15 @@
         <div class="header-top" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
             <div class="header">
                 <h1>🔮 Sistem Pelaporan Kerusakan Perangkat Laboratorium</h1>
-                <p>Laporkan & kelola kerusakan | Neon Theme + Feedback</p>
+                <p>Laporkan & kelola kerusakan | Neon Theme + Admin Mode</p>
             </div>
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <button id="darkModeToggle" class="btn">🌓 Dark/Light</button>
+                <div id="adminPanel" style="display: flex; gap: 8px;">
+                    <button id="adminLoginBtn" class="btn">🔐 Login Admin</button>
+                    <button id="adminLogoutBtn" class="btn hidden" style="background:#ff006e;">🚪 Logout Admin</button>
+                    <span id="adminStatus" class="admin-badge hidden">Admin Mode</span>
+                </div>
                 <div class="dev-chips">
                     <div class="dev-chip"><span class="chip-name">MUHAMMAD BAGAS PUTRA ANDEDZA</span><span class="chip-nim">NIM: 251410003</span></div>
                     <div class="dev-chip"><span class="chip-name">M BAGAS KHOIRULLAH</span><span class="chip-nim">NIM: 251410016</span></div>
@@ -393,12 +407,11 @@
             </div>
         </div>
 
-        <!-- Menu Bar -->
+        <!-- Menu Bar (tanpa QR) -->
         <div class="menu-bar">
             <button class="menu-btn active" data-menu="laporan">📋 Laporan</button>
             <button class="menu-btn" data-menu="dashboard">📊 Dashboard</button>
             <button class="menu-btn" data-menu="export">📎 Export</button>
-            <button class="menu-btn" data-menu="qr">📱 QR Perangkat</button>
             <button class="menu-btn" data-menu="bulanan">📅 Laporan Bulanan</button>
             <button class="menu-btn" data-menu="rating">⭐ Rating</button>
             <button class="menu-btn" data-menu="feedback">💬 Feedback</button>
@@ -449,7 +462,7 @@
                         <input type="date" id="filterEndDate" placeholder="Sampai">
                         <button id="searchBtn" class="btn">Cari</button>
                     </div>
-                    <button id="deleteAllBtn" class="btn" style="color:#ffb3c6; border-color:#ff006e;">🗑️ Hapus Semua</button>
+                    <button id="deleteAllBtn" class="btn" style="color:#ffb3c6; border-color:#ff006e; display: none;">🗑️ Hapus Semua</button>
                 </div>
                 <div id="reportsContainer" class="reports-grid"><div class="empty-state" style="text-align:center; padding:2rem;">📭 Memuat data ...</div></div>
             </div>
@@ -470,10 +483,6 @@
         <!-- Menu Export -->
         <div id="menuExport" class="hidden">
             <div class="panel-card"><h3>📎 Export Data</h3><button id="exportExcelBtn" class="btn btn-primary">Export ke Excel (CSV)</button><button id="exportPDFBtn" class="btn">Export sebagai Gambar</button></div>
-        </div>
-        <!-- Menu QR -->
-        <div id="menuQR" class="hidden">
-            <div class="panel-card"><h3>📱 QR Code Perangkat</h3><input type="text" id="qrDeviceName" placeholder="Nama Perangkat"><button id="genQRBtn" class="btn btn-primary">Generate QR</button><div id="qrResult" style="margin-top:12px;"></div></div>
         </div>
         <!-- Menu Bulanan -->
         <div id="menuBulanan" class="hidden">
@@ -496,7 +505,7 @@
                 <button id="clearFeedbackBtn" class="btn" style="margin-top:12px;">🗑️ Hapus Semua Feedback</button>
             </div>
         </div>
-        <footer>⚙️ Data tersimpan secara lokal | Suara & animasi aktif | All Features + Feedback</footer>
+        <footer>⚙️ Data tersimpan secara lokal | Suara & animasi aktif | Admin: klik Login Admin (password: admin123)</footer>
     </div>
 </div>
 
@@ -512,6 +521,46 @@
     let estimasi = {};
     let feedbacks = [];
 
+    let isAdmin = false;  // Status admin
+
+    // ========== ADMIN LOGIN ==========
+    function checkAdminStatus() {
+        const saved = sessionStorage.getItem("lab_admin");
+        if (saved === "true") {
+            isAdmin = true;
+            document.getElementById('adminLoginBtn').classList.add('hidden');
+            document.getElementById('adminLogoutBtn').classList.remove('hidden');
+            document.getElementById('adminStatus').classList.remove('hidden');
+            document.getElementById('deleteAllBtn').style.display = 'inline-flex';
+        } else {
+            isAdmin = false;
+            document.getElementById('adminLoginBtn').classList.remove('hidden');
+            document.getElementById('adminLogoutBtn').classList.add('hidden');
+            document.getElementById('adminStatus').classList.add('hidden');
+            document.getElementById('deleteAllBtn').style.display = 'none';
+        }
+        renderAll(); // refresh tampilan untuk menampilkan/menyembunyikan tombol aksi
+    }
+
+    function adminLogin() {
+        const pwd = prompt("Masukkan password admin:");
+        if (pwd === "admin123") {
+            sessionStorage.setItem("lab_admin", "true");
+            isAdmin = true;
+            checkAdminStatus();
+            showToast("Login admin berhasil! Anda sekarang memiliki akses penuh.", "🔓");
+        } else {
+            showToast("Password salah! Akses ditolak.", "❌");
+        }
+    }
+    function adminLogout() {
+        sessionStorage.removeItem("lab_admin");
+        isAdmin = false;
+        checkAdminStatus();
+        showToast("Anda telah keluar dari mode admin.", "🔒");
+    }
+
+    // ========== HELPER ==========
     function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m=> m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
     function saveAll() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allReports));
@@ -554,6 +603,7 @@
         return true;
     }
     function clearAllFeedbacks(){
+        if(!isAdmin) { showToast("Hanya admin yang dapat menghapus feedback!","⚠️"); return; }
         if(confirm("Hapus semua feedback?")){ feedbacks = []; saveAll(); renderFeedbacks(); showToast("Semua feedback dihapus","🗑️"); }
     }
 
@@ -588,7 +638,6 @@
         }
         container.innerHTML = html;
     }
-    // Render komentar dengan style scrolling seperti history
     function renderKomentar() {
         let cont = document.getElementById('komentarList');
         if(!cont) return;
@@ -640,6 +689,7 @@
         return true;
     }
     function changeStatusToProcess(id) {
+        if(!isAdmin) { showToast("Hanya admin yang dapat mengubah status!", "⚠️"); return false; }
         const idx = allReports.findIndex(r=>r.id==id);
         if(idx!==-1 && allReports[idx].status==="Baru"){
             allReports[idx].status="Diproses";
@@ -651,6 +701,7 @@
         return false;
     }
     function changeStatusToComplete(id) {
+        if(!isAdmin) { showToast("Hanya admin yang dapat mengubah status!", "⚠️"); return false; }
         const idx = allReports.findIndex(r=>r.id==id);
         if(idx!==-1 && allReports[idx].status==="Diproses"){
             allReports[idx].status="Selesai";
@@ -663,6 +714,7 @@
         return false;
     }
     function deleteReportById(id) {
+        if(!isAdmin) { showToast("Hanya admin yang dapat menghapus laporan!", "⚠️"); return false; }
         const deleted = allReports.find(r=>r.id==id);
         if(deleted){
             allReports = allReports.filter(r=>r.id!=id);
@@ -671,8 +723,10 @@
             addHistory('dihapus', `Laporan "${deleted.namaAlat}" dari ${deleted.namaPelapor} dihapus`);
             playVoiceDelete(); showCheckmarkAnimation(); showToast(`Laporan "${deleted.namaAlat}" dihapus`);
         }
+        return false;
     }
     function deleteAllReports() {
+        if(!isAdmin) { showToast("Hanya admin yang dapat menghapus semua laporan!", "⚠️"); return false; }
         if(allReports.length===0) return showToast("Tidak ada laporan");
         if(confirm("Hapus semua laporan?")){
             for(const r of allReports) addHistory('dihapus', `Laporan "${r.namaAlat}" dihapus (massal)`);
@@ -680,6 +734,7 @@
             saveAll(); renderAll();
             showToast("Semua laporan telah dihapus");
         }
+        return false;
     }
     window.beriRating = (id)=>{
         let rate = prompt("Beri rating 1-5 bintang:");
@@ -690,10 +745,14 @@
             updateDashboard();
             addHistory('rating', `Laporan ID ${id} mendapat rating ${rate}`);
             showToast(`⭐ Rating ${rate} diberikan`);
-            playVoiceRating();  // Tambahan suara ucapan terima kasih
+            playVoiceRating();
         }
     };
-    window.tambahEstimasi = (id)=>{ let tgl=prompt("Target selesai (YYYY-MM-DD):"); if(tgl){ estimasi[id]=tgl; saveAll(); renderAll(); } };
+    window.tambahEstimasi = (id)=>{
+        if(!isAdmin) { showToast("Hanya admin yang dapat menambah estimasi!", "⚠️"); return false; }
+        let tgl = prompt("Target selesai (YYYY-MM-DD):");
+        if(tgl){ estimasi[id]=tgl; saveAll(); renderAll(); }
+    };
 
     document.getElementById('uploadPhotoBtn')?.addEventListener('click',()=>document.getElementById('photoInput').click());
     document.getElementById('photoInput')?.addEventListener('change',(e)=>{
@@ -712,10 +771,13 @@
         for(const r of data){
             let badgeClass = r.status==='Baru'?'status-baru':(r.status==='Diproses'?'status-diproses':'status-selesai');
             let priorityClass = r.priority==='Tinggi'?'priority-high':(r.priority==='Sedang'?'priority-medium':'priority-low');
+            // Hanya tampilkan tombol aksi jika admin
             let actions = '';
-            if(r.status==='Baru') actions = `<button class="btn btn-warning btn-sm btn-process" data-id="${r.id}">🔄 Proses</button><button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️</button>`;
-            else if(r.status==='Diproses') actions = `<button class="btn btn-success btn-sm btn-complete" data-id="${r.id}">✅ Selesai</button><button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️</button>`;
-            else actions = `<button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️ Hapus</button>`;
+            if(isAdmin){
+                if(r.status==='Baru') actions = `<button class="btn btn-warning btn-sm btn-process" data-id="${r.id}">🔄 Proses</button><button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️</button>`;
+                else if(r.status==='Diproses') actions = `<button class="btn btn-success btn-sm btn-complete" data-id="${r.id}">✅ Selesai</button><button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️</button>`;
+                else actions = `<button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️ Hapus</button>`;
+            }
             html += `<div class="report-card">
                         <div style="display:flex; justify-content:space-between;"><strong>🔧 ${escapeHtml(r.namaAlat)}</strong><span class="badge ${badgeClass}">${r.status}</span></div>
                         <div>👤 ${escapeHtml(r.namaPelapor)}</div>
@@ -726,7 +788,7 @@
                         <div>📅 ${escapeHtml(r.tanggal)}</div>
                         ${estimasi[r.id] ? `<div><small>Estimasi selesai: ${estimasi[r.id]}</small></div>` : ''}
                         ${ratings[r.id] ? `<div>⭐ Rating: ${ratings[r.id]}/5</div>` : (r.status==='Selesai'?`<button class="btn btn-sm" onclick="beriRating(${r.id})">⭐ Beri Rating</button>`:'')}
-                        <div style="margin-top:10px;">${actions}</div>
+                        ${isAdmin ? `<div style="margin-top:10px;">${actions}</div>` : ''}
                     </div>`;
         }
         container.innerHTML = html;
@@ -763,19 +825,19 @@
         let totalRatings = Object.values(ratings).length;
         let avg = totalRatings>0 ? (Object.values(ratings).reduce((a,b)=>a+b,0)/totalRatings).toFixed(1) : 0;
         document.getElementById('avgRating') && (document.getElementById('avgRating').innerHTML = `⭐ ${avg}/5 (${totalRatings} rating)`);
-        document.getElementById('ratingHistory') && (document.getElementById('ratingHistory').innerHTML = Object.entries(ratings).map(([id,val])=>`Laporan ID ${id}: ${val}⭐`).join('<br>') || 'Belum ada rating');
+        let ratingHtml = Object.entries(ratings).map(([id,val])=>`Laporan ID ${id}: ${val}⭐`).join('<br>');
+        document.getElementById('ratingHistory') && (document.getElementById('ratingHistory').innerHTML = ratingHtml || 'Belum ada rating');
     }
     document.getElementById('exportExcelBtn')?.addEventListener('click',()=>{
         let csv = "ID,Nama Pelapor,Alat,Lokasi,Deskripsi,Tanggal,Status,Prioritas\n"+allReports.map(r=>`${r.id},${r.namaPelapor},${r.namaAlat},${r.lokasi},${r.deskripsi},${r.tanggal},${r.status},${r.priority}`).join("\n");
         let blob=new Blob([csv],{type:"text/csv"}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="laporan_lab.csv"; a.click();
     });
     document.getElementById('exportPDFBtn')?.addEventListener('click',()=>{ html2canvas(document.querySelector('.container')).then(canvas=>{ let a=document.createElement('a'); a.download='dashboard.png'; a.href=canvas.toDataURL(); a.click(); }); });
-    document.getElementById('genQRBtn')?.addEventListener('click',()=>{ let name=document.getElementById('qrDeviceName').value; if(!name) return alert("Masukkan nama perangkat"); document.getElementById('qrResult').innerHTML=""; new QRCode(document.getElementById('qrResult'),{ text:`Perangkat: ${name}`, width:200, height:200 }); });
     document.getElementById('genMonthlyBtn')?.addEventListener('click',()=>{ let month=document.getElementById('monthPicker').value; if(!month) return; let [year,monthNum]=month.split('-'); let filtered=allReports.filter(r=> r.tanggal.startsWith(year) && r.tanggal.split('-')[1]==monthNum); document.getElementById('monthlyReport').innerHTML=`<p>Total laporan: ${filtered.length}</p><ul>${filtered.map(r=>`<li>${r.tanggal} - ${r.namaAlat} (${r.status})</li>`).join('')}</ul>`; });
     document.getElementById('notifBtn')?.addEventListener('click',()=>{ if(window.Notification && Notification.permission!=='granted') Notification.requestPermission(); else alert("Notifikasi sudah diizinkan"); });
     document.getElementById('darkModeToggle')?.addEventListener('click',()=>{ document.body.classList.toggle('light'); });
 
-    const menus = ['laporan','dashboard','export','qr','bulanan','rating','feedback'];
+    const menus = ['laporan','dashboard','export','bulanan','rating','feedback'];
     function showMenu(menu){
         menus.forEach(m=>{ let el=document.getElementById(`menu${m.charAt(0).toUpperCase()+m.slice(1)}`); if(el) el.classList.add('hidden'); });
         document.getElementById(`menu${menu.charAt(0).toUpperCase()+menu.slice(1)}`).classList.remove('hidden');
@@ -791,7 +853,7 @@
         let id=parseInt(target.getAttribute('data-id'));
         if(target.classList.contains('btn-process')) if(id) changeStatusToProcess(id);
         if(target.classList.contains('btn-complete')) if(id) changeStatusToComplete(id);
-        if(target.classList.contains('btn-delete')) if(id) if(confirm("Hapus?")) deleteReportById(id);
+        if(target.classList.contains('btn-delete')) if(id) deleteReportById(id);
     });
     document.getElementById('deleteAllBtn')?.addEventListener('click',()=>deleteAllReports());
     document.getElementById('filterStatus')?.addEventListener('change',(e)=>setFilter(e.target.value));
@@ -815,6 +877,10 @@
     });
     document.getElementById('clearFeedbackBtn')?.addEventListener('click',()=>clearAllFeedbacks());
 
+    // Admin event
+    document.getElementById('adminLoginBtn')?.addEventListener('click', adminLogin);
+    document.getElementById('adminLogoutBtn')?.addEventListener('click', adminLogout);
+
     function loadInitialData(){
         const stored=localStorage.getItem(STORAGE_KEY);
         if(stored) try{ allReports=JSON.parse(stored); }catch(e){ allReports=[]; }
@@ -832,6 +898,7 @@
     }
     function init(){
         loadHistory(); loadInitialData(); loadFeedbacks(); renderAll(); setFilter('semua');
+        checkAdminStatus();  // cek session admin
         document.body.addEventListener('click',()=>{ if(audioContext && audioContext.state==='suspended') audioContext.resume(); });
     }
     init();
