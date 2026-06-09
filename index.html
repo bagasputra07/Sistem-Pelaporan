@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Sistem Pelaporan Lab | Neon Theme + Admin Mode</title>
+    <title>Sistem Pelaporan Lab | Universitas Binadarma</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -509,7 +509,7 @@
                 <button id="clearFeedbackBtn" class="btn" style="margin-top:12px;">🗑️ Hapus Semua Feedback</button>
             </div>
         </div>
-        <footer>⚙️ Data tersimpan secara lokal | Suara & animasi aktif | </footer>
+        <footer>⚙️ Data tersimpan secara lokal | Universitas Binadarma</footer>
     </div>
 </div>
 
@@ -530,7 +530,7 @@
     // ========== FUNGSI SUARA UNTUK PASSWORD SALAH ==========
     function playVoiceWrongPassword() {
         if (!window.speechSynthesis) return;
-        window.speechSynthesis.cancel(); // hentikan suara lain agar tidak bertabrakan
+        window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance("Hei kamu ngapain");
         utterance.lang = "id-ID";
         utterance.rate = 0.9;
@@ -566,7 +566,7 @@
             showToast("Login admin berhasil! Anda sekarang memiliki akses penuh.", "🔓");
         } else {
             showToast("Password salah! Akses ditolak.", "❌");
-            playVoiceWrongPassword();  // Tambahan suara peringatan
+            playVoiceWrongPassword();
         }
     }
 
