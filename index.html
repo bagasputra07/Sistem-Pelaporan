@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Sistem Pelaporan Lab | Neon Theme + Admin Mode</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sistem Pelaporan Lab | Anti-Plagiasi + Mobile</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -12,6 +12,13 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
+            user-select: none; /* mencegah seleksi teks */
+            -webkit-user-select: none;
+            -webkit-touch-callout: none; /* cegah long press menu di iOS */
+            touch-action: manipulation;
+        }
+        img, div {
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* NEON THEME - DARK MODE (default) */
@@ -22,37 +29,55 @@
             border: 4px solid transparent;
             transition: background 0.3s, color 0.3s;
         }
-
-        #ratingHistory, #avgRating, #topDevices {
-            color: #e0e0ff;
+        /* Overlay perlindungan saat screenshot/deteksi */
+        #protectionOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            z-index: 20000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            text-align: center;
+            font-size: 1.2rem;
+            gap: 20px;
+            padding: 20px;
+        }
+        #protectionOverlay button {
+            background: #ff006e;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
         }
 
+        #ratingHistory, #avgRating, #topDevices { color: #e0e0ff; }
         body.light {
             background: #eef2f5;
         }
-        body.light .quick-add-card,
-        body.light .panel-card,
-        body.light .filter-area,
-        body.light .toolbar .btn,
-        body.light .gui-btn,
-        body.light .report-card,
-        body.light .menu-bar,
-        body.light .modal-content {
+        body.light .quick-add-card, body.light .panel-card, body.light .filter-area,
+        body.light .toolbar .btn, body.light .gui-btn, body.light .report-card,
+        body.light .menu-bar, body.light .modal-content {
             background: rgba(255, 255, 255, 0.95);
             color: #1e293b;
             border-color: #3b82f6;
         }
-        body.light .history-item,
-        body.light .komentar-item {
+        body.light .history-item, body.light .komentar-item {
             background: #f8fafc !important;
             border-left-color: #3b82f6 !important;
             color: #1e293b !important;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
-        body.light .history-item .history-title,
-        body.light .history-item .history-time,
-        body.light .komentar-item .komentar-time,
-        body.light .komentar-item .komentar-text {
+        body.light .history-item .history-title, body.light .history-item .history-time,
+        body.light .komentar-item .komentar-time, body.light .komentar-item .komentar-text {
             color: #1e293b !important;
         }
         body.light .feedback-item {
@@ -60,40 +85,21 @@
             border: 1px solid #e2e8f0;
             color: #1e293b !important;
         }
-        body.light .feedback-item small {
-            color: #475569 !important;
-        }
-        body.light #ratingHistory,
-        body.light #avgRating,
-        body.light #topDevices {
-            color: #1e293b !important;
-        }
-        body.light .report-card,
-        body.light .panel-card h3,
-        body.light .filter-area span,
-        body.light .menu-btn {
-            color: #1e293b;
-        }
-        body.light input,
-        body.light textarea,
-        body.light select {
+        body.light .feedback-item small { color: #475569 !important; }
+        body.light #ratingHistory, body.light #avgRating, body.light #topDevices { color: #1e293b !important; }
+        body.light .report-card, body.light .panel-card h3, body.light .filter-area span, body.light .menu-btn { color: #1e293b; }
+        body.light input, body.light textarea, body.light select {
             background: white;
             color: #1e293b;
             border-color: #3b82f6;
         }
-        body.light .btn-primary {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-        }
+        body.light .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); }
         body.light .dev-chip {
             background: white;
             border-color: #3b82f6;
         }
-        body.light .dev-chip .chip-name {
-            color: #1e293b;
-        }
-        body.light .dev-chip .chip-nim {
-            color: #475569;
-        }
+        body.light .dev-chip .chip-name { color: #1e293b; }
+        body.light .dev-chip .chip-nim { color: #475569; }
 
         /* Animasi border merah */
         body.red-edge-alert {
@@ -386,12 +392,17 @@
     </style>
 </head>
 <body>
+<div id="protectionOverlay">
+    <div>⚠️ DETEKSI SCREENSHOT / DEBUGGING!</div>
+    <div>DILARANG MEMPLAGIASI, MEN-SCREENSHOT, ATAU MENCURI KONTEN.</div>
+    <button id="closeProtection">OK, Saya Mengerti</button>
+</div>
 <div class="dashboard">
     <div class="container">
         <div class="header-top" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
             <div class="header">
                 <h1>🔮 Sistem Pelaporan Kerusakan Perangkat Laboratorium</h1>
-                <p>Laporkan & kelola kerusakan | Neon Theme</p>
+                <p>Laporkan & kelola kerusakan | Proteksi Anti-Screenshot (Desktop + Mobile)</p>
             </div>
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <button id="darkModeToggle" class="btn">🌓 Dark/Light</button>
@@ -407,7 +418,7 @@
             </div>
         </div>
 
-        <!-- Menu Bar (tanpa QR) -->
+        <!-- Menu Bar -->
         <div class="menu-bar">
             <button class="menu-btn active" data-menu="laporan">📋 Laporan</button>
             <button class="menu-btn" data-menu="dashboard">📊 Dashboard</button>
@@ -505,12 +516,150 @@
                 <button id="clearFeedbackBtn" class="btn" style="margin-top:12px;">🗑️ Hapus Semua Feedback</button>
             </div>
         </div>
-        <footer>⚙️ Data tersimpan secara lokal | Suara & animasi aktif | Admin: klik Login Admin (password: admin123)</footer>
+        <footer>⚙️ Data tersimpan secara lokal | Suara & animasi aktif | Admin: Login (admin123) | Proteksi screenshot aktif di semua perangkat</footer>
     </div>
 </div>
 
 <script>
-    // ========== GLOBAL DATA ==========
+    // ========== ANTI SCREENSHOT (Desktop + Mobile) ==========
+    (function antiScreenshot() {
+        let screenshotDetected = false;
+        const overlay = document.getElementById('protectionOverlay');
+        const closeBtn = document.getElementById('closeProtection');
+        let lastBlurTime = 0;
+        let blurTimeout = null;
+
+        function showProtection() {
+            if (screenshotDetected) return;
+            screenshotDetected = true;
+            overlay.style.display = 'flex';
+            document.body.style.filter = 'blur(8px)';
+            // Auto-hide setelah 5 detik
+            setTimeout(() => {
+                if (overlay.style.display === 'flex') {
+                    overlay.style.display = 'none';
+                    document.body.style.filter = '';
+                    screenshotDetected = false;
+                }
+            }, 5000);
+        }
+
+        // 1. Deteksi PrintScreen & kombinasi (Desktop)
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'PrintScreen' || e.keyCode === 44) {
+                e.preventDefault();
+                showProtection();
+                return false;
+            }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+                e.preventDefault();
+                showProtection();
+                return false;
+            }
+            if (e.key === 'PrtSc') {
+                e.preventDefault();
+                showProtection();
+                return false;
+            }
+            // F12, Ctrl+Shift+I, Ctrl+U
+            if (e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) ||
+                (e.ctrlKey && (e.key === 'U' || e.key === 'u'))) {
+                e.preventDefault();
+                showProtection();
+                return false;
+            }
+        });
+
+        // 2. Cegah klik kanan
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            showProtection();
+            return false;
+        });
+
+        // 3. Deteksi DevTools (perubahan ukuran window)
+        let devtools = /./;
+        devtools.toString = function() {
+            showProtection();
+            return '';
+        };
+        setInterval(function() {
+            if (window.outerHeight - window.innerHeight > 100 || window.outerWidth - window.innerWidth > 100) {
+                showProtection();
+            }
+        }, 1500);
+
+        // ========== DETEKSI SCREENSHOT MOBILE (Android / iOS) ==========
+        // Pendekatan: mendeteksi ketika halaman kehilangan fokus (blur) atau visibility berubah
+        // Screenshot pada mobile biasanya membuat aplikasi sempat tidak aktif (blur) atau terjadi perubahan visibility
+        // Juga kombinasi tombol volume + power di Android bisa dideteksi dengan event keydown volume
+
+        // Deteksi visibility change (tab pindah / aplikasi background)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // Mungkin pengguna sedang screenshot atau keluar aplikasi
+                lastBlurTime = Date.now();
+                if (blurTimeout) clearTimeout(blurTimeout);
+                blurTimeout = setTimeout(() => {
+                    // Jika kembali setelah 200ms, bisa dianggap screenshot
+                    if (Date.now() - lastBlurTime < 1000) {
+                        showProtection();
+                    }
+                }, 200);
+            } else {
+                // kembali ke tab
+                if (blurTimeout) clearTimeout(blurTimeout);
+                if (lastBlurTime && Date.now() - lastBlurTime < 800) {
+                    showProtection();
+                }
+            }
+        });
+
+        // Deteksi window blur (kehilangan fokus)
+        window.addEventListener('blur', function() {
+            lastBlurTime = Date.now();
+            blurTimeout = setTimeout(() => {
+                if (Date.now() - lastBlurTime < 800) {
+                    showProtection();
+                }
+            }, 300);
+        });
+        window.addEventListener('focus', function() {
+            if (blurTimeout) clearTimeout(blurTimeout);
+            if (lastBlurTime && Date.now() - lastBlurTime < 800) {
+                showProtection();
+            }
+        });
+
+        // Deteksi tombol volume di mobile (Android & iOS (iOS tidak bisa, tapi kita coba))
+        window.addEventListener('keydown', function(e) {
+            // Kode volume up: 175, volume down: 174 (Android)
+            if (e.keyCode === 175 || e.keyCode === 174) {
+                // Kemungkinan screenshot (volume down + power)
+                setTimeout(() => {
+                    showProtection();
+                }, 50);
+                return false;
+            }
+        });
+
+        // Tambahkan juga event touchstart untuk mendeteksi gesture 3 jari? (tidak perlu terlalu agresif)
+        // Cegah long press menu di mobile (CSS sudah -webkit-touch-callout)
+        // Dan nonaktifkan kemampuan menyimpan gambar dari gambar
+        document.querySelectorAll('img').forEach(img => {
+            img.addEventListener('contextmenu', (e) => e.preventDefault());
+            img.addEventListener('dragstart', (e) => e.preventDefault());
+        });
+
+        closeBtn.addEventListener('click', function() {
+            overlay.style.display = 'none';
+            document.body.style.filter = '';
+            screenshotDetected = false;
+        });
+    })();
+
+    // ========== SISTEM UTAMA (tidak berubah, dipertahankan) ==========
     let allReports = [];
     let currentFilter = "semua";
     const STORAGE_KEY = "lab_equipment_reports";
@@ -521,46 +670,8 @@
     let estimasi = {};
     let feedbacks = [];
 
-    let isAdmin = false;  // Status admin
+    let isAdmin = false;
 
-    // ========== ADMIN LOGIN ==========
-    function checkAdminStatus() {
-        const saved = sessionStorage.getItem("lab_admin");
-        if (saved === "true") {
-            isAdmin = true;
-            document.getElementById('adminLoginBtn').classList.add('hidden');
-            document.getElementById('adminLogoutBtn').classList.remove('hidden');
-            document.getElementById('adminStatus').classList.remove('hidden');
-            document.getElementById('deleteAllBtn').style.display = 'inline-flex';
-        } else {
-            isAdmin = false;
-            document.getElementById('adminLoginBtn').classList.remove('hidden');
-            document.getElementById('adminLogoutBtn').classList.add('hidden');
-            document.getElementById('adminStatus').classList.add('hidden');
-            document.getElementById('deleteAllBtn').style.display = 'none';
-        }
-        renderAll(); // refresh tampilan untuk menampilkan/menyembunyikan tombol aksi
-    }
-
-    function adminLogin() {
-        const pwd = prompt("Masukkan password admin:");
-        if (pwd === "admin123") {
-            sessionStorage.setItem("lab_admin", "true");
-            isAdmin = true;
-            checkAdminStatus();
-            showToast("Login admin berhasil! Anda sekarang memiliki akses penuh.", "🔓");
-        } else {
-            showToast("Password salah! Akses ditolak.", "❌");
-        }
-    }
-    function adminLogout() {
-        sessionStorage.removeItem("lab_admin");
-        isAdmin = false;
-        checkAdminStatus();
-        showToast("Anda telah keluar dari mode admin.", "🔒");
-    }
-
-    // ========== HELPER ==========
     function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m=> m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
     function saveAll() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allReports));
@@ -655,26 +766,17 @@
         cont.innerHTML = html;
     }
 
-    // ========== AUDIO & ANIMASI ==========
     let audioContext = null;
     function playBellSound() { try { if(!audioContext) audioContext=new (window.AudioContext||window.webkitAudioContext)(); if(audioContext.state==='suspended') audioContext.resume(); const now=audioContext.currentTime; const osc=audioContext.createOscillator(); const gain=audioContext.createGain(); osc.connect(gain); gain.connect(audioContext.destination); osc.frequency.value=880; gain.gain.setValueAtTime(0.3,now); gain.gain.exponentialRampToValueAtTime(0.0001,now+0.8); osc.start(); osc.stop(now+0.8); const osc2=audioContext.createOscillator(); const gain2=audioContext.createGain(); osc2.connect(gain2); gain2.connect(audioContext.destination); osc2.frequency.value=1320; gain2.gain.setValueAtTime(0.15,now); gain2.gain.exponentialRampToValueAtTime(0.0001,now+0.5); osc2.start(); osc2.stop(now+0.5); } catch(e){} }
     function playVoiceReportReceived() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Diterima"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
     function playVoiceProcess() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Diproses"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
     function playVoiceCompleted() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Selesai"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
     function playVoiceDelete() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Dihapus"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
-    function playVoiceRating() {
-        if(!window.speechSynthesis) return;
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance("Terima kasih sudah memberi rating");
-        u.lang = "id-ID";
-        u.rate = 0.9;
-        window.speechSynthesis.speak(u);
-    }
+    function playVoiceRating() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Terima kasih sudah memberi rating"); u.lang="id-ID"; u.rate=0.9; window.speechSynthesis.speak(u); }
     function showCheckmarkAnimation() { const ex=document.querySelector('.checkmark-overlay'); if(ex) ex.remove(); const div=document.createElement('div'); div.className='checkmark-overlay'; div.innerHTML='<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'; document.body.appendChild(div); div.offsetHeight; div.classList.add('show'); setTimeout(()=>{ div.classList.remove('show'); setTimeout(()=>div.remove(),500); },1500); }
     function showProcessAnimation() { const ex=document.querySelector('.process-animation-overlay'); if(ex) ex.remove(); const div=document.createElement('div'); div.className='process-animation-overlay'; div.innerHTML='<div style="text-align:center;"><div class="gear-icon">⚙️</div><div class="process-text">Memproses...</div></div>'; document.body.appendChild(div); div.offsetHeight; div.classList.add('show'); setTimeout(()=>{ div.classList.remove('show'); setTimeout(()=>div.remove(),800); },1300); }
     function showToast(msg, icon="✅") { const toast=document.createElement('div'); toast.className='toast-notification'; toast.innerHTML=`<span>${icon}</span> <span>${msg}</span>`; document.body.appendChild(toast); toast.offsetHeight; toast.classList.add('show'); setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>toast.remove(),3500); },3500); }
 
-    // ========== CRUD ==========
     function addReport(namaPelapor, namaAlat, lokasi, deskripsi, selectedDateValue, priority) {
         if(!namaPelapor.trim() || !namaAlat.trim() || !deskripsi.trim()) { showToast("Isi semua field","⚠️"); return false; }
         let tanggalDisplay = selectedDateValue ? (new Date(selectedDateValue).toLocaleString('id-ID') || new Date().toLocaleString('id-ID')) : new Date().toLocaleString('id-ID');
@@ -771,7 +873,6 @@
         for(const r of data){
             let badgeClass = r.status==='Baru'?'status-baru':(r.status==='Diproses'?'status-diproses':'status-selesai');
             let priorityClass = r.priority==='Tinggi'?'priority-high':(r.priority==='Sedang'?'priority-medium':'priority-low');
-            // Hanya tampilkan tombol aksi jika admin
             let actions = '';
             if(isAdmin){
                 if(r.status==='Baru') actions = `<button class="btn btn-warning btn-sm btn-process" data-id="${r.id}">🔄 Proses</button><button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️</button>`;
@@ -877,7 +978,38 @@
     });
     document.getElementById('clearFeedbackBtn')?.addEventListener('click',()=>clearAllFeedbacks());
 
-    // Admin event
+    function checkAdminStatus() {
+        const saved = sessionStorage.getItem("lab_admin");
+        if (saved === "true") {
+            isAdmin = true;
+            document.getElementById('adminLoginBtn').classList.add('hidden');
+            document.getElementById('adminLogoutBtn').classList.remove('hidden');
+            document.getElementById('adminStatus').classList.remove('hidden');
+            document.getElementById('deleteAllBtn').style.display = 'inline-flex';
+        } else {
+            isAdmin = false;
+            document.getElementById('adminLoginBtn').classList.remove('hidden');
+            document.getElementById('adminLogoutBtn').classList.add('hidden');
+            document.getElementById('adminStatus').classList.add('hidden');
+            document.getElementById('deleteAllBtn').style.display = 'none';
+        }
+        renderAll();
+    }
+    function adminLogin() {
+        const pwd = prompt("Masukkan password admin:");
+        if (pwd === "admin123") {
+            sessionStorage.setItem("lab_admin", "true");
+            checkAdminStatus();
+            showToast("Login admin berhasil! Anda sekarang memiliki akses penuh.", "🔓");
+        } else {
+            showToast("Password salah! Akses ditolak.", "❌");
+        }
+    }
+    function adminLogout() {
+        sessionStorage.removeItem("lab_admin");
+        checkAdminStatus();
+        showToast("Anda telah keluar dari mode admin.", "🔒");
+    }
     document.getElementById('adminLoginBtn')?.addEventListener('click', adminLogin);
     document.getElementById('adminLogoutBtn')?.addEventListener('click', adminLogout);
 
@@ -898,7 +1030,7 @@
     }
     function init(){
         loadHistory(); loadInitialData(); loadFeedbacks(); renderAll(); setFilter('semua');
-        checkAdminStatus();  // cek session admin
+        checkAdminStatus();
         document.body.addEventListener('click',()=>{ if(audioContext && audioContext.state==='suspended') audioContext.resume(); });
     }
     init();
