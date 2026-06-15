@@ -1,10 +1,10 @@
-
+```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Sistem Pelaporan Lab | Universitas Binadarma</title>
+    <title>Sistem Pelaporan Lab | Universitas Binadarma (OOP)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -13,7 +13,7 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
-            user-select: none; /* mencegah seleksi teks (opsional) */
+            user-select: none;
             -webkit-user-select: none;
         }
 
@@ -395,7 +395,7 @@
         <div class="header-top" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
             <div class="header">
                 <h1>🔮 Sistem Pelaporan Kerusakan Perangkat Laboratorium</h1>
-                <p>Laporkan & kelola kerusakan | Universitas Binadarma</p>
+                <p>Laporkan & kelola kerusakan | Universitas Binadarma (OOP)</p>
             </div>
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <button id="darkModeToggle" class="btn">🌓 Dark/Light</button>
@@ -509,415 +509,564 @@
                 <button id="clearFeedbackBtn" class="btn" style="margin-top:12px;">🗑️ Hapus Semua Feedback</button>
             </div>
         </div>
-        <footer>⚙️ Data tersimpan secara lokal | Universitas Binadarma</footer>
+        <footer>⚙️ Data tersimpan secara lokal | Universitas Binadarma (OOP)</footer>
     </div>
 </div>
 
 <script>
-    // ========== GLOBAL DATA ==========
-    let allReports = [];
-    let currentFilter = "semua";
-    const STORAGE_KEY = "lab_equipment_reports";
-    const HISTORY_KEY = "lab_history";
-    let historyLogs = [];
-    let ratings = {};
-    let photos = {};
-    let estimasi = {};
-    let feedbacks = [];
+    // ========================== OOP IMPLEMENTATION ==========================
+    class LabReportSystem {
+        constructor() {
+            this.allReports = [];
+            this.historyLogs = [];
+            this.ratings = {};
+            this.photos = {};
+            this.estimasi = {};
+            this.feedbacks = [];
+            this.isAdmin = false;
+            this.currentFilter = "semua";
+            this.statusChart = null;
+            this.audioContext = null;
+            this.init();
+        }
 
-    let isAdmin = false;
+        // ========== UTILITIES ==========
+        playVoiceWrongPassword() {
+            if (!window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance("Hei kamu ngapain");
+            utterance.lang = "id-ID";
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
 
-    // ========== FUNGSI SUARA UNTUK PASSWORD SALAH ==========
-    function playVoiceWrongPassword() {
-        if (!window.speechSynthesis) return;
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance("Hei kamu ngapain");
-        utterance.lang = "id-ID";
-        utterance.rate = 0.9;
-        utterance.volume = 1;
-        window.speechSynthesis.speak(utterance);
-    }
+        playBellSound() {
+            try {
+                if (!this.audioContext) this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (this.audioContext.state === 'suspended') this.audioContext.resume();
+                const now = this.audioContext.currentTime;
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+                osc.frequency.value = 880;
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+                osc.start();
+                osc.stop(now + 0.8);
+                const osc2 = this.audioContext.createOscillator();
+                const gain2 = this.audioContext.createGain();
+                osc2.connect(gain2);
+                gain2.connect(this.audioContext.destination);
+                osc2.frequency.value = 1320;
+                gain2.gain.setValueAtTime(0.15, now);
+                gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+                osc2.start();
+                osc2.stop(now + 0.5);
+            } catch (e) { }
+        }
 
-    // ========== ADMIN LOGIN ==========
-    function checkAdminStatus() {
-        const saved = sessionStorage.getItem("lab_admin");
-        if (saved === "true") {
-            isAdmin = true;
-            document.getElementById('adminLoginBtn').classList.add('hidden');
-            document.getElementById('adminLogoutBtn').classList.remove('hidden');
-            document.getElementById('adminStatus').classList.remove('hidden');
-            document.getElementById('deleteAllBtn').style.display = 'inline-flex';
-        } else {
-            isAdmin = false;
-            document.getElementById('adminLoginBtn').classList.remove('hidden');
-            document.getElementById('adminLogoutBtn').classList.add('hidden');
-            document.getElementById('adminStatus').classList.add('hidden');
-            document.getElementById('deleteAllBtn').style.display = 'none';
-        }
-        renderAll();
-    }
+        playVoiceReportReceived() { if (!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance("Laporan Diterima"); u.lang = "id-ID"; window.speechSynthesis.speak(u); }
+        playVoiceProcess() { if (!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance("Laporan Diproses"); u.lang = "id-ID"; window.speechSynthesis.speak(u); }
+        playVoiceCompleted() { if (!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance("Laporan Selesai"); u.lang = "id-ID"; window.speechSynthesis.speak(u); }
+        playVoiceDelete() { if (!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance("Laporan Dihapus"); u.lang = "id-ID"; window.speechSynthesis.speak(u); }
+        playVoiceRating() { if (!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance("Terima kasih sudah memberi rating"); u.lang = "id-ID"; u.rate = 0.9; window.speechSynthesis.speak(u); }
 
-    function adminLogin() {
-        const pwd = prompt("Masukkan password admin:");
-        if (pwd === "admin123") {
-            sessionStorage.setItem("lab_admin", "true");
-            isAdmin = true;
-            checkAdminStatus();
-            showToast("Login admin berhasil! Anda sekarang memiliki akses penuh.", "🔓");
-        } else {
-            showToast("Password salah! Akses ditolak.", "❌");
-            playVoiceWrongPassword();
+        showCheckmarkAnimation() {
+            const ex = document.querySelector('.checkmark-overlay');
+            if (ex) ex.remove();
+            const div = document.createElement('div');
+            div.className = 'checkmark-overlay';
+            div.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+            document.body.appendChild(div);
+            div.offsetHeight;
+            div.classList.add('show');
+            setTimeout(() => { div.classList.remove('show'); setTimeout(() => div.remove(), 500); }, 1500);
         }
-    }
 
-    function adminLogout() {
-        sessionStorage.removeItem("lab_admin");
-        isAdmin = false;
-        checkAdminStatus();
-        showToast("Anda telah keluar dari mode admin.", "🔒");
-    }
+        showProcessAnimation() {
+            const ex = document.querySelector('.process-animation-overlay');
+            if (ex) ex.remove();
+            const div = document.createElement('div');
+            div.className = 'process-animation-overlay';
+            div.innerHTML = '<div style="text-align:center;"><div class="gear-icon">⚙️</div><div class="process-text">Memproses...</div></div>';
+            document.body.appendChild(div);
+            div.offsetHeight;
+            div.classList.add('show');
+            setTimeout(() => { div.classList.remove('show'); setTimeout(() => div.remove(), 800); }, 1300);
+        }
 
-    // ========== HELPER ==========
-    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m=> m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
-    function saveAll() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(allReports));
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(historyLogs));
-        localStorage.setItem("lab_ratings", JSON.stringify(ratings));
-        localStorage.setItem("lab_photos", JSON.stringify(photos));
-        localStorage.setItem("lab_estimasi", JSON.stringify(estimasi));
-        localStorage.setItem("lab_feedbacks", JSON.stringify(feedbacks));
-    }
-    function loadFeedbacks() {
-        const stored = localStorage.getItem("lab_feedbacks");
-        if(stored) try{ feedbacks = JSON.parse(stored); }catch(e){ feedbacks=[]; }
-        if(feedbacks.length===0){
-            feedbacks.push({ id: Date.now(), name: "Admin", message: "Selamat datang! Silakan berikan feedback Anda.", timestamp: new Date().toLocaleString('id-ID') });
-            saveAll();
+        showToast(msg, icon = "✅") {
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
+            document.body.appendChild(toast);
+            toast.offsetHeight;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 3500); }, 3500);
         }
-        renderFeedbacks();
-    }
-    function renderFeedbacks() {
-        const container = document.getElementById('feedbackList');
-        if(!container) return;
-        if(feedbacks.length===0) { container.innerHTML = '<div>Tidak ada feedback</div>'; return; }
-        let html = '';
-        for(const f of feedbacks.slice().reverse()){
-            html += `<div class="feedback-item">
-                        <div><strong>${escapeHtml(f.name || 'Anonim')}</strong> <small>${f.timestamp}</small></div>
-                        <div>💬 ${escapeHtml(f.message)}</div>
-                    </div>`;
-        }
-        container.innerHTML = html;
-    }
-    function addFeedback(name, message){
-        if(!message.trim()) { showToast("Isi pesan feedback","⚠️"); return false; }
-        const newFeedback = { id: Date.now(), name: name.trim() || "Anonim", message: message.trim(), timestamp: new Date().toLocaleString('id-ID') };
-        feedbacks.unshift(newFeedback);
-        saveAll();
-        renderFeedbacks();
-        showToast("Feedback berhasil dikirim! Terima kasih.", "📝");
-        addHistory('feedback', `Feedback dari ${newFeedback.name}: "${newFeedback.message.substring(0,50)}..."`);
-        return true;
-    }
-    function clearAllFeedbacks(){
-        if(!isAdmin) { showToast("Hanya admin yang dapat menghapus feedback!","⚠️"); return; }
-        if(confirm("Hapus semua feedback?")){ feedbacks = []; saveAll(); renderFeedbacks(); showToast("Semua feedback dihapus","🗑️"); }
-    }
 
-    function loadHistory() {
-        const stored = localStorage.getItem(HISTORY_KEY);
-        if(stored) try{ historyLogs = JSON.parse(stored); }catch(e){ historyLogs=[]; }
-        if(historyLogs.length===0){
-            const now = new Date().toLocaleString('id-ID');
-            historyLogs = [
-                { id: Date.now()+1000, type: 'diterima', message: 'Contoh: Laporan "Mikroskop" diterima', timestamp: now },
-                { id: Date.now()+1001, type: 'diproses', message: 'Contoh: Laporan "Mikroskop" diproses', timestamp: now },
-            ];
-            saveAll();
-        }
-    }
-    function formatDateTime() { return new Date().toLocaleString('id-ID'); }
-    function addHistory(type, message) {
-        historyLogs.unshift({ id: Date.now(), type, message, timestamp: formatDateTime() });
-        if(historyLogs.length>100) historyLogs.pop();
-        saveAll();
-        renderHistory();
-        renderKomentar();
-    }
-    function renderHistory() {
-        const container = document.getElementById('historyList');
-        if(!container) return;
-        if(historyLogs.length===0) { container.innerHTML='<div class="history-item">📭 Belum ada history</div>'; return; }
-        let html='';
-        for(const h of historyLogs){
-            let cls = h.type==='diterima'?'history-diterima': h.type==='diproses'?'history-diproses': h.type==='selesai'?'history-selesai':'history-dihapus';
-            html+=`<div class="history-item ${cls}"><div class="history-title">🔹 ${escapeHtml(h.message)}</div><div class="history-time">🕒 ${escapeHtml(h.timestamp)}</div></div>`;
-        }
-        container.innerHTML = html;
-    }
-    function renderKomentar() {
-        let cont = document.getElementById('komentarList');
-        if(!cont) return;
-        if(historyLogs.length===0) {
-            cont.innerHTML = '<div class="komentar-item">📭 Belum ada komentar</div>';
-            return;
-        }
-        let html = '';
-        for(const h of historyLogs.slice(0,20)){
-            html += `<div class="komentar-item">
-                        <div class="komentar-time">🕒 ${escapeHtml(h.timestamp)}</div>
-                        <div class="komentar-text">${escapeHtml(h.message)}</div>
-                    </div>`;
-        }
-        cont.innerHTML = html;
-    }
+        escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
 
-    // ========== AUDIO & ANIMASI ==========
-    let audioContext = null;
-    function playBellSound() { try { if(!audioContext) audioContext=new (window.AudioContext||window.webkitAudioContext)(); if(audioContext.state==='suspended') audioContext.resume(); const now=audioContext.currentTime; const osc=audioContext.createOscillator(); const gain=audioContext.createGain(); osc.connect(gain); gain.connect(audioContext.destination); osc.frequency.value=880; gain.gain.setValueAtTime(0.3,now); gain.gain.exponentialRampToValueAtTime(0.0001,now+0.8); osc.start(); osc.stop(now+0.8); const osc2=audioContext.createOscillator(); const gain2=audioContext.createGain(); osc2.connect(gain2); gain2.connect(audioContext.destination); osc2.frequency.value=1320; gain2.gain.setValueAtTime(0.15,now); gain2.gain.exponentialRampToValueAtTime(0.0001,now+0.5); osc2.start(); osc2.stop(now+0.5); } catch(e){} }
-    function playVoiceReportReceived() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Diterima"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
-    function playVoiceProcess() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Diproses"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
-    function playVoiceCompleted() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Selesai"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
-    function playVoiceDelete() { if(!window.speechSynthesis) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Laporan Dihapus"); u.lang="id-ID"; window.speechSynthesis.speak(u); }
-    function playVoiceRating() {
-        if(!window.speechSynthesis) return;
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance("Terima kasih sudah memberi rating");
-        u.lang = "id-ID";
-        u.rate = 0.9;
-        window.speechSynthesis.speak(u);
-    }
-    function showCheckmarkAnimation() { const ex=document.querySelector('.checkmark-overlay'); if(ex) ex.remove(); const div=document.createElement('div'); div.className='checkmark-overlay'; div.innerHTML='<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'; document.body.appendChild(div); div.offsetHeight; div.classList.add('show'); setTimeout(()=>{ div.classList.remove('show'); setTimeout(()=>div.remove(),500); },1500); }
-    function showProcessAnimation() { const ex=document.querySelector('.process-animation-overlay'); if(ex) ex.remove(); const div=document.createElement('div'); div.className='process-animation-overlay'; div.innerHTML='<div style="text-align:center;"><div class="gear-icon">⚙️</div><div class="process-text">Memproses...</div></div>'; document.body.appendChild(div); div.offsetHeight; div.classList.add('show'); setTimeout(()=>{ div.classList.remove('show'); setTimeout(()=>div.remove(),800); },1300); }
-    function showToast(msg, icon="✅") { const toast=document.createElement('div'); toast.className='toast-notification'; toast.innerHTML=`<span>${icon}</span> <span>${msg}</span>`; document.body.appendChild(toast); toast.offsetHeight; toast.classList.add('show'); setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>toast.remove(),3500); },3500); }
+        formatDateTime() { return new Date().toLocaleString('id-ID'); }
 
-    // ========== CRUD ==========
-    function addReport(namaPelapor, namaAlat, lokasi, deskripsi, selectedDateValue, priority) {
-        if(!namaPelapor.trim() || !namaAlat.trim() || !deskripsi.trim()) { showToast("Isi semua field","⚠️"); return false; }
-        let tanggalDisplay = selectedDateValue ? (new Date(selectedDateValue).toLocaleString('id-ID') || new Date().toLocaleString('id-ID')) : new Date().toLocaleString('id-ID');
-        const newReport = { id: Date.now(), namaPelapor: namaPelapor.trim(), namaAlat: namaAlat.trim(), lokasi: lokasi?.trim() || "", deskripsi: deskripsi.trim(), tanggal: tanggalDisplay, status: "Baru", priority: priority || "Rendah" };
-        allReports.unshift(newReport);
-        if(photos['temp']){ photos[newReport.id]=photos['temp']; delete photos['temp']; document.getElementById('photoName').innerText=''; }
-        saveAll(); renderAll();
-        addHistory('diterima', `Laporan "${newReport.namaAlat}" dari ${newReport.namaPelapor} diterima (Prioritas ${priority})`);
-        playVoiceReportReceived(); showCheckmarkAnimation(); playBellSound();
-        showToast(`Laporan dari ${newReport.namaPelapor} untuk "${newReport.namaAlat}" berhasil dikirim!`);
-        if(window.Notification && Notification.permission==='granted') new Notification("Laporan Baru",{body:`${newReport.namaPelapor} melaporkan ${newReport.namaAlat}`});
-        return true;
-    }
-    function changeStatusToProcess(id) {
-        if(!isAdmin) { showToast("Hanya admin yang dapat mengubah status!", "⚠️"); return false; }
-        const idx = allReports.findIndex(r=>r.id==id);
-        if(idx!==-1 && allReports[idx].status==="Baru"){
-            allReports[idx].status="Diproses";
-            saveAll(); renderAll();
-            addHistory('diproses', `Laporan "${allReports[idx].namaAlat}" diproses`);
-            playVoiceProcess(); showProcessAnimation(); showToast(`Status "${allReports[idx].namaAlat}" → DIPROSES`,"⚙️");
-            return true;
+        // ========== DATA PERSISTENCE ==========
+        saveAll() {
+            localStorage.setItem("lab_equipment_reports", JSON.stringify(this.allReports));
+            localStorage.setItem("lab_history", JSON.stringify(this.historyLogs));
+            localStorage.setItem("lab_ratings", JSON.stringify(this.ratings));
+            localStorage.setItem("lab_photos", JSON.stringify(this.photos));
+            localStorage.setItem("lab_estimasi", JSON.stringify(this.estimasi));
+            localStorage.setItem("lab_feedbacks", JSON.stringify(this.feedbacks));
         }
-        return false;
-    }
-    function changeStatusToComplete(id) {
-        if(!isAdmin) { showToast("Hanya admin yang dapat mengubah status!", "⚠️"); return false; }
-        const idx = allReports.findIndex(r=>r.id==id);
-        if(idx!==-1 && allReports[idx].status==="Diproses"){
-            allReports[idx].status="Selesai";
-            saveAll(); renderAll();
-            addHistory('selesai', `Laporan "${allReports[idx].namaAlat}" selesai diperbaiki`);
-            playVoiceCompleted(); showCheckmarkAnimation(); playBellSound();
-            showToast(`✅ Laporan "${allReports[idx].namaAlat}" selesai`);
-            return true;
-        }
-        return false;
-    }
-    function deleteReportById(id) {
-        if(!isAdmin) { showToast("Hanya admin yang dapat menghapus laporan!", "⚠️"); return false; }
-        const deleted = allReports.find(r=>r.id==id);
-        if(deleted){
-            allReports = allReports.filter(r=>r.id!=id);
-            delete photos[id]; delete ratings[id]; delete estimasi[id];
-            saveAll(); renderAll();
-            addHistory('dihapus', `Laporan "${deleted.namaAlat}" dari ${deleted.namaPelapor} dihapus`);
-            playVoiceDelete(); showCheckmarkAnimation(); showToast(`Laporan "${deleted.namaAlat}" dihapus`);
-        }
-        return false;
-    }
-    function deleteAllReports() {
-        if(!isAdmin) { showToast("Hanya admin yang dapat menghapus semua laporan!", "⚠️"); return false; }
-        if(allReports.length===0) return showToast("Tidak ada laporan");
-        if(confirm("Hapus semua laporan?")){
-            for(const r of allReports) addHistory('dihapus', `Laporan "${r.namaAlat}" dihapus (massal)`);
-            allReports=[]; ratings={}; photos={}; estimasi={};
-            saveAll(); renderAll();
-            showToast("Semua laporan telah dihapus");
-        }
-        return false;
-    }
-    window.beriRating = (id)=>{
-        let rate = prompt("Beri rating 1-5 bintang:");
-        if(rate>=1 && rate<=5){
-            ratings[id] = parseInt(rate);
-            saveAll();
-            renderAll();
-            updateDashboard();
-            addHistory('rating', `Laporan ID ${id} mendapat rating ${rate}`);
-            showToast(`⭐ Rating ${rate} diberikan`);
-            playVoiceRating();
-        }
-    };
-    window.tambahEstimasi = (id)=>{
-        if(!isAdmin) { showToast("Hanya admin yang dapat menambah estimasi!", "⚠️"); return false; }
-        let tgl = prompt("Target selesai (YYYY-MM-DD):");
-        if(tgl){ estimasi[id]=tgl; saveAll(); renderAll(); }
-    };
 
-    document.getElementById('uploadPhotoBtn')?.addEventListener('click',()=>document.getElementById('photoInput').click());
-    document.getElementById('photoInput')?.addEventListener('change',(e)=>{
-        let file=e.target.files[0];
-        if(file){ let reader=new FileReader(); reader.onload=ev=>{ photos['temp']=ev.target.result; document.getElementById('photoName').innerText=file.name; }; reader.readAsDataURL(file); }
-    });
+        loadData() {
+            const stored = localStorage.getItem("lab_equipment_reports");
+            if (stored) try { this.allReports = JSON.parse(stored); } catch (e) { this.allReports = []; }
+            const hist = localStorage.getItem("lab_history");
+            if (hist) try { this.historyLogs = JSON.parse(hist); } catch (e) { this.historyLogs = []; }
+            const rat = localStorage.getItem("lab_ratings");
+            if (rat) try { this.ratings = JSON.parse(rat); } catch (e) { this.ratings = {}; }
+            const ph = localStorage.getItem("lab_photos");
+            if (ph) try { this.photos = JSON.parse(ph); } catch (e) { this.photos = {}; }
+            const est = localStorage.getItem("lab_estimasi");
+            if (est) try { this.estimasi = JSON.parse(est); } catch (e) { this.estimasi = {}; }
+            const fb = localStorage.getItem("lab_feedbacks");
+            if (fb) try { this.feedbacks = JSON.parse(fb); } catch (e) { this.feedbacks = []; }
 
-    function renderLeftGrid(filtered=null){
-        let data = filtered || allReports;
-        if(currentFilter!=="semua") data = data.filter(r=>r.status===currentFilter);
-        data.sort((a,b)=>b.id-a.id);
-        let container = document.getElementById('reportsContainer');
-        if(!container) return;
-        if(data.length===0){ container.innerHTML='<div class="empty-state" style="text-align:center;padding:2rem;">📭 Tidak ada laporan</div>'; return; }
-        let html='';
-        for(const r of data){
-            let badgeClass = r.status==='Baru'?'status-baru':(r.status==='Diproses'?'status-diproses':'status-selesai');
-            let priorityClass = r.priority==='Tinggi'?'priority-high':(r.priority==='Sedang'?'priority-medium':'priority-low');
-            let actions = '';
-            if(isAdmin){
-                if(r.status==='Baru') actions = `<button class="btn btn-warning btn-sm btn-process" data-id="${r.id}">🔄 Proses</button><button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️</button>`;
-                else if(r.status==='Diproses') actions = `<button class="btn btn-success btn-sm btn-complete" data-id="${r.id}">✅ Selesai</button><button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️</button>`;
-                else actions = `<button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️ Hapus</button>`;
+            if (this.allReports.length === 0) {
+                const now = new Date().toLocaleString('id-ID');
+                this.allReports = [
+                    { id: 101, namaPelapor: "Budi", namaAlat: "Mikroskop", lokasi: "Lab A", deskripsi: "Lensa buram", tanggal: now, status: "Baru", priority: "Tinggi" },
+                    { id: 102, namaPelapor: "Siti", namaAlat: "Sentrifuse", lokasi: "Lab B", deskripsi: "Tutup rusak", tanggal: now, status: "Diproses", priority: "Sedang" }
+                ];
+                this.saveAll();
             }
-            html += `<div class="report-card">
-                        <div style="display:flex; justify-content:space-between;"><strong>🔧 ${escapeHtml(r.namaAlat)}</strong><span class="badge ${badgeClass}">${r.status}</span></div>
-                        <div>👤 ${escapeHtml(r.namaPelapor)}</div>
-                        <div>📍 ${escapeHtml(r.lokasi||'-')}</div>
-                        <div><span class="badge ${priorityClass}">${r.priority}</span></div>
-                        ${photos[r.id] ? `<div><img src="${photos[r.id]}" style="max-width:80px; border-radius:8px; cursor:pointer" onclick="window.open(this.src)"></div>` : ''}
-                        <div style="background:rgba(0,0,0,0.3); padding:8px; border-radius:16px; margin:8px 0;">📝 ${escapeHtml(r.deskripsi)}</div>
-                        <div>📅 ${escapeHtml(r.tanggal)}</div>
-                        ${estimasi[r.id] ? `<div><small>Estimasi selesai: ${estimasi[r.id]}</small></div>` : ''}
-                        ${ratings[r.id] ? `<div>⭐ Rating: ${ratings[r.id]}/5</div>` : (r.status==='Selesai'?`<button class="btn btn-sm" onclick="beriRating(${r.id})">⭐ Beri Rating</button>`:'')}
-                        ${isAdmin ? `<div style="margin-top:10px;">${actions}</div>` : ''}
-                    </div>`;
+            if (this.historyLogs.length === 0) {
+                const now = this.formatDateTime();
+                this.historyLogs = [
+                    { id: Date.now() + 1000, type: 'diterima', message: 'Contoh: Laporan "Mikroskop" diterima', timestamp: now },
+                    { id: Date.now() + 1001, type: 'diproses', message: 'Contoh: Laporan "Mikroskop" diproses', timestamp: now },
+                ];
+                this.saveAll();
+            }
+            if (this.feedbacks.length === 0) {
+                this.feedbacks.push({ id: Date.now(), name: "Admin", message: "Selamat datang! Silakan berikan feedback Anda.", timestamp: this.formatDateTime() });
+                this.saveAll();
+            }
         }
-        container.innerHTML = html;
-        document.getElementById('estimasiList') && (document.getElementById('estimasiList').innerHTML = Object.entries(estimasi).map(([id,val])=>`<div>📅 Laporan ID ${id}: target ${val}</div>`).join(''));
-    }
-    function renderAll() { renderLeftGrid(); renderHistory(); renderKomentar(); updateDashboard(); }
-    function setFilter(status){
-        currentFilter=status;
-        document.getElementById('filterStatus').value=status;
-        renderLeftGrid();
-        const btnDiproses=document.getElementById('filterDiprosesBtn'), btnSelesai=document.getElementById('filterSelesaiBtn'), btnReset=document.getElementById('resetFilterBtn');
-        btnDiproses.classList.remove('active'); btnSelesai.classList.remove('active'); btnReset.classList.remove('active');
-        if(status==='Diproses') btnDiproses.classList.add('active');
-        else if(status==='Selesai') btnSelesai.classList.add('active');
-        else btnReset.classList.add('active');
-    }
-    document.getElementById('searchBtn')?.addEventListener('click',()=>{
-        let kw = document.getElementById('searchInput').value.toLowerCase();
-        let start = document.getElementById('filterStartDate').value;
-        let end = document.getElementById('filterEndDate').value;
-        let filtered = allReports.filter(r=> (r.namaPelapor.toLowerCase().includes(kw)||r.namaAlat.toLowerCase().includes(kw)) && (!start||r.tanggal>=start) && (!end||r.tanggal<=end));
-        renderLeftGrid(filtered);
-    });
 
-    let statusChart;
-    function updateDashboard(){
-        let statusCount = { Baru:0, Diproses:0, Selesai:0 };
-        let deviceCount = {};
-        allReports.forEach(r=>{ statusCount[r.status]++; deviceCount[r.namaAlat]=(deviceCount[r.namaAlat]||0)+1; });
-        let ctx = document.getElementById('statusChart')?.getContext('2d');
-        if(ctx){ if(statusChart) statusChart.destroy(); statusChart = new Chart(ctx,{ type:'bar', data:{ labels:['Baru','Diproses','Selesai'], datasets:[{ label:'Jumlah', data:[statusCount.Baru,statusCount.Diproses,statusCount.Selesai], backgroundColor:['#ff006e','#f59e0b','#10b981'] }] } }); }
-        let topDev = Object.entries(deviceCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(d=>`${d[0]}: ${d[1]}x`).join('<br>');
-        document.getElementById('topDevices') && (document.getElementById('topDevices').innerHTML = topDev || '-');
-        let totalRatings = Object.values(ratings).length;
-        let avg = totalRatings>0 ? (Object.values(ratings).reduce((a,b)=>a+b,0)/totalRatings).toFixed(1) : 0;
-        document.getElementById('avgRating') && (document.getElementById('avgRating').innerHTML = `⭐ ${avg}/5 (${totalRatings} rating)`);
-        let ratingHtml = Object.entries(ratings).map(([id,val])=>`Laporan ID ${id}: ${val}⭐`).join('<br>');
-        document.getElementById('ratingHistory') && (document.getElementById('ratingHistory').innerHTML = ratingHtml || 'Belum ada rating');
-    }
-    document.getElementById('exportExcelBtn')?.addEventListener('click',()=>{
-        let csv = "ID,Nama Pelapor,Alat,Lokasi,Deskripsi,Tanggal,Status,Prioritas\n"+allReports.map(r=>`${r.id},${r.namaPelapor},${r.namaAlat},${r.lokasi},${r.deskripsi},${r.tanggal},${r.status},${r.priority}`).join("\n");
-        let blob=new Blob([csv],{type:"text/csv"}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="laporan_lab.csv"; a.click();
-    });
-    document.getElementById('exportPDFBtn')?.addEventListener('click',()=>{ html2canvas(document.querySelector('.container')).then(canvas=>{ let a=document.createElement('a'); a.download='dashboard.png'; a.href=canvas.toDataURL(); a.click(); }); });
-    document.getElementById('genMonthlyBtn')?.addEventListener('click',()=>{ let month=document.getElementById('monthPicker').value; if(!month) return; let [year,monthNum]=month.split('-'); let filtered=allReports.filter(r=> r.tanggal.startsWith(year) && r.tanggal.split('-')[1]==monthNum); document.getElementById('monthlyReport').innerHTML=`<p>Total laporan: ${filtered.length}</p><ul>${filtered.map(r=>`<li>${r.tanggal} - ${r.namaAlat} (${r.status})</li>`).join('')}</ul>`; });
-    document.getElementById('notifBtn')?.addEventListener('click',()=>{ if(window.Notification && Notification.permission!=='granted') Notification.requestPermission(); else alert("Notifikasi sudah diizinkan"); });
-    document.getElementById('darkModeToggle')?.addEventListener('click',()=>{ document.body.classList.toggle('light'); });
+        addHistory(type, message) {
+            this.historyLogs.unshift({ id: Date.now(), type, message, timestamp: this.formatDateTime() });
+            if (this.historyLogs.length > 100) this.historyLogs.pop();
+            this.saveAll();
+            this.renderHistory();
+            this.renderKomentar();
+        }
 
-    const menus = ['laporan','dashboard','export','bulanan','rating','feedback'];
-    function showMenu(menu){
-        menus.forEach(m=>{ let el=document.getElementById(`menu${m.charAt(0).toUpperCase()+m.slice(1)}`); if(el) el.classList.add('hidden'); });
-        document.getElementById(`menu${menu.charAt(0).toUpperCase()+menu.slice(1)}`).classList.remove('hidden');
-        document.querySelectorAll('.menu-btn').forEach(btn=>btn.classList.remove('active'));
-        document.querySelector(`.menu-btn[data-menu="${menu}"]`).classList.add('active');
-        if(menu==='dashboard'||menu==='rating') updateDashboard();
-        if(menu==='feedback') renderFeedbacks();
-    }
-    document.querySelectorAll('.menu-btn').forEach(btn=>btn.addEventListener('click',()=>showMenu(btn.dataset.menu)));
+        // ========== CRUD ==========
+        addReport(namaPelapor, namaAlat, lokasi, deskripsi, selectedDateValue, priority) {
+            if (!namaPelapor.trim() || !namaAlat.trim() || !deskripsi.trim()) {
+                this.showToast("Isi semua field", "⚠️");
+                return false;
+            }
+            let tanggalDisplay = selectedDateValue ? (new Date(selectedDateValue).toLocaleString('id-ID') || this.formatDateTime()) : this.formatDateTime();
+            const newReport = {
+                id: Date.now(),
+                namaPelapor: namaPelapor.trim(),
+                namaAlat: namaAlat.trim(),
+                lokasi: lokasi?.trim() || "",
+                deskripsi: deskripsi.trim(),
+                tanggal: tanggalDisplay,
+                status: "Baru",
+                priority: priority || "Rendah"
+            };
+            this.allReports.unshift(newReport);
+            if (this.photos['temp']) {
+                this.photos[newReport.id] = this.photos['temp'];
+                delete this.photos['temp'];
+                document.getElementById('photoName').innerText = '';
+            }
+            this.saveAll();
+            this.renderAll();
+            this.addHistory('diterima', `Laporan "${newReport.namaAlat}" dari ${newReport.namaPelapor} diterima (Prioritas ${priority})`);
+            this.playVoiceReportReceived();
+            this.showCheckmarkAnimation();
+            this.playBellSound();
+            this.showToast(`Laporan dari ${newReport.namaPelapor} untuk "${newReport.namaAlat}" berhasil dikirim!`);
+            if (window.Notification && Notification.permission === 'granted') new Notification("Laporan Baru", { body: `${newReport.namaPelapor} melaporkan ${newReport.namaAlat}` });
+            return true;
+        }
 
-    document.body.addEventListener('click',(e)=>{
-        let target=e.target;
-        let id=parseInt(target.getAttribute('data-id'));
-        if(target.classList.contains('btn-process')) if(id) changeStatusToProcess(id);
-        if(target.classList.contains('btn-complete')) if(id) changeStatusToComplete(id);
-        if(target.classList.contains('btn-delete')) if(id) deleteReportById(id);
-    });
-    document.getElementById('deleteAllBtn')?.addEventListener('click',()=>deleteAllReports());
-    document.getElementById('filterStatus')?.addEventListener('change',(e)=>setFilter(e.target.value));
-    document.getElementById('filterDiprosesBtn')?.addEventListener('click',()=>setFilter('Diproses'));
-    document.getElementById('filterSelesaiBtn')?.addEventListener('click',()=>setFilter('Selesai'));
-    document.getElementById('resetFilterBtn')?.addEventListener('click',()=>setFilter('semua'));
-    document.getElementById('quickReportForm')?.addEventListener('submit',(e)=>{
-        e.preventDefault();
-        let namaPelapor=document.getElementById('quickNamaPelapor').value;
-        let namaAlat=document.getElementById('quickAlatName').value;
-        let lokasi=document.getElementById('quickLokasi').value;
-        let priority=document.getElementById('quickPriority').value;
-        let deskripsi=document.getElementById('quickDeskripsi').value;
-        let tanggal=document.getElementById('quickTanggal').value;
-        if(addReport(namaPelapor, namaAlat, lokasi, deskripsi, tanggal, priority)) document.getElementById('quickReportForm').reset();
-    });
-    document.getElementById('submitFeedbackBtn')?.addEventListener('click',()=>{
-        let name = document.getElementById('feedbackName').value;
-        let msg = document.getElementById('feedbackText').value;
-        if(addFeedback(name, msg)){ document.getElementById('feedbackText').value=''; document.getElementById('feedbackName').value=''; }
-    });
-    document.getElementById('clearFeedbackBtn')?.addEventListener('click',()=>clearAllFeedbacks());
+        changeStatusToProcess(id) {
+            if (!this.isAdmin) { this.showToast("Hanya admin yang dapat mengubah status!", "⚠️"); return false; }
+            const idx = this.allReports.findIndex(r => r.id == id);
+            if (idx !== -1 && this.allReports[idx].status === "Baru") {
+                this.allReports[idx].status = "Diproses";
+                this.saveAll();
+                this.renderAll();
+                this.addHistory('diproses', `Laporan "${this.allReports[idx].namaAlat}" diproses`);
+                this.playVoiceProcess();
+                this.showProcessAnimation();
+                this.showToast(`Status "${this.allReports[idx].namaAlat}" → DIPROSES`, "⚙️");
+                return true;
+            }
+            return false;
+        }
 
-    // Admin event
-    document.getElementById('adminLoginBtn')?.addEventListener('click', adminLogin);
-    document.getElementById('adminLogoutBtn')?.addEventListener('click', adminLogout);
+        changeStatusToComplete(id) {
+            if (!this.isAdmin) { this.showToast("Hanya admin yang dapat mengubah status!", "⚠️"); return false; }
+            const idx = this.allReports.findIndex(r => r.id == id);
+            if (idx !== -1 && this.allReports[idx].status === "Diproses") {
+                this.allReports[idx].status = "Selesai";
+                this.saveAll();
+                this.renderAll();
+                this.addHistory('selesai', `Laporan "${this.allReports[idx].namaAlat}" selesai diperbaiki`);
+                this.playVoiceCompleted();
+                this.showCheckmarkAnimation();
+                this.playBellSound();
+                this.showToast(`✅ Laporan "${this.allReports[idx].namaAlat}" selesai`);
+                return true;
+            }
+            return false;
+        }
 
-    function loadInitialData(){
-        const stored=localStorage.getItem(STORAGE_KEY);
-        if(stored) try{ allReports=JSON.parse(stored); }catch(e){ allReports=[]; }
-        const rat=localStorage.getItem("lab_ratings"); if(rat) try{ ratings=JSON.parse(rat); }catch(e){ ratings={}; }
-        const ph=localStorage.getItem("lab_photos"); if(ph) try{ photos=JSON.parse(ph); }catch(e){ photos={}; }
-        const est=localStorage.getItem("lab_estimasi"); if(est) try{ estimasi=JSON.parse(est); }catch(e){ estimasi={}; }
-        if(allReports.length===0){
-            const now=new Date().toLocaleString('id-ID');
-            allReports=[
-                { id:101, namaPelapor:"Budi", namaAlat:"Mikroskop", lokasi:"Lab A", deskripsi:"Lensa buram", tanggal:now, status:"Baru", priority:"Tinggi" },
-                { id:102, namaPelapor:"Siti", namaAlat:"Sentrifuse", lokasi:"Lab B", deskripsi:"Tutup rusak", tanggal:now, status:"Diproses", priority:"Sedang" }
-            ];
-            saveAll();
+        deleteReportById(id) {
+            if (!this.isAdmin) { this.showToast("Hanya admin yang dapat menghapus laporan!", "⚠️"); return false; }
+            const deleted = this.allReports.find(r => r.id == id);
+            if (deleted) {
+                this.allReports = this.allReports.filter(r => r.id != id);
+                delete this.photos[id];
+                delete this.ratings[id];
+                delete this.estimasi[id];
+                this.saveAll();
+                this.renderAll();
+                this.addHistory('dihapus', `Laporan "${deleted.namaAlat}" dari ${deleted.namaPelapor} dihapus`);
+                this.playVoiceDelete();
+                this.showCheckmarkAnimation();
+                this.showToast(`Laporan "${deleted.namaAlat}" dihapus`);
+            }
+            return false;
+        }
+
+        deleteAllReports() {
+            if (!this.isAdmin) { this.showToast("Hanya admin yang dapat menghapus semua laporan!", "⚠️"); return false; }
+            if (this.allReports.length === 0) return this.showToast("Tidak ada laporan");
+            if (confirm("Hapus semua laporan?")) {
+                for (const r of this.allReports) this.addHistory('dihapus', `Laporan "${r.namaAlat}" dihapus (massal)`);
+                this.allReports = [];
+                this.ratings = {};
+                this.photos = {};
+                this.estimasi = {};
+                this.saveAll();
+                this.renderAll();
+                this.showToast("Semua laporan telah dihapus");
+            }
+            return false;
+        }
+
+        beriRating(id) {
+            let rate = prompt("Beri rating 1-5 bintang:");
+            if (rate >= 1 && rate <= 5) {
+                this.ratings[id] = parseInt(rate);
+                this.saveAll();
+                this.renderAll();
+                this.updateDashboard();
+                this.addHistory('rating', `Laporan ID ${id} mendapat rating ${rate}`);
+                this.showToast(`⭐ Rating ${rate} diberikan`);
+                this.playVoiceRating();
+            }
+        }
+
+        tambahEstimasi(id) {
+            if (!this.isAdmin) { this.showToast("Hanya admin yang dapat menambah estimasi!", "⚠️"); return false; }
+            let tgl = prompt("Target selesai (YYYY-MM-DD):");
+            if (tgl) { this.estimasi[id] = tgl; this.saveAll(); this.renderAll(); }
+        }
+
+        // ========== RENDER ==========
+        renderHistory() {
+            const container = document.getElementById('historyList');
+            if (!container) return;
+            if (this.historyLogs.length === 0) { container.innerHTML = '<div class="history-item">📭 Belum ada history</div>'; return; }
+            let html = '';
+            for (const h of this.historyLogs) {
+                html += `<div class="history-item"><div class="history-title">🔹 ${this.escapeHtml(h.message)}</div><div class="history-time">🕒 ${this.escapeHtml(h.timestamp)}</div></div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        renderKomentar() {
+            const cont = document.getElementById('komentarList');
+            if (!cont) return;
+            if (this.historyLogs.length === 0) { cont.innerHTML = '<div class="komentar-item">📭 Belum ada komentar</div>'; return; }
+            let html = '';
+            for (const h of this.historyLogs.slice(0, 20)) {
+                html += `<div class="komentar-item"><div class="komentar-time">🕒 ${this.escapeHtml(h.timestamp)}</div><div class="komentar-text">${this.escapeHtml(h.message)}</div></div>`;
+            }
+            cont.innerHTML = html;
+        }
+
+        renderLeftGrid(filtered = null) {
+            let data = filtered || this.allReports;
+            if (this.currentFilter !== "semua") data = data.filter(r => r.status === this.currentFilter);
+            data.sort((a, b) => b.id - a.id);
+            const container = document.getElementById('reportsContainer');
+            if (!container) return;
+            if (data.length === 0) { container.innerHTML = '<div class="empty-state" style="text-align:center;padding:2rem;">📭 Tidak ada laporan</div>'; return; }
+            let html = '';
+            for (const r of data) {
+                let badgeClass = r.status === 'Baru' ? 'status-baru' : (r.status === 'Diproses' ? 'status-diproses' : 'status-selesai');
+                let priorityClass = r.priority === 'Tinggi' ? 'priority-high' : (r.priority === 'Sedang' ? 'priority-medium' : 'priority-low');
+                let actions = '';
+                if (this.isAdmin) {
+                    if (r.status === 'Baru') actions = `<button class="btn btn-warning btn-sm btn-process" data-id="${r.id}">🔄 Proses</button><button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️</button>`;
+                    else if (r.status === 'Diproses') actions = `<button class="btn btn-success btn-sm btn-complete" data-id="${r.id}">✅ Selesai</button><button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️</button>`;
+                    else actions = `<button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}">🗑️ Hapus</button>`;
+                }
+                html += `<div class="report-card">
+                            <div style="display:flex; justify-content:space-between;"><strong>🔧 ${this.escapeHtml(r.namaAlat)}</strong><span class="badge ${badgeClass}">${r.status}</span></div>
+                            <div>👤 ${this.escapeHtml(r.namaPelapor)}</div>
+                            <div>📍 ${this.escapeHtml(r.lokasi || '-')}</div>
+                            <div><span class="badge ${priorityClass}">${r.priority}</span></div>
+                            ${this.photos[r.id] ? `<div><img src="${this.photos[r.id]}" style="max-width:80px; border-radius:8px; cursor:pointer" onclick="window.open(this.src)"></div>` : ''}
+                            <div style="background:rgba(0,0,0,0.3); padding:8px; border-radius:16px; margin:8px 0;">📝 ${this.escapeHtml(r.deskripsi)}</div>
+                            <div>📅 ${this.escapeHtml(r.tanggal)}</div>
+                            ${this.estimasi[r.id] ? `<div><small>Estimasi selesai: ${this.estimasi[r.id]}</small></div>` : ''}
+                            ${this.ratings[r.id] ? `<div>⭐ Rating: ${this.ratings[r.id]}/5</div>` : (r.status === 'Selesai' ? `<button class="btn btn-sm" onclick="window.app.beriRating(${r.id})">⭐ Beri Rating</button>` : '')}
+                            ${this.isAdmin ? `<div style="margin-top:10px;">${actions}</div>` : ''}
+                        </div>`;
+            }
+            container.innerHTML = html;
+            const estimasiDiv = document.getElementById('estimasiList');
+            if (estimasiDiv) estimasiDiv.innerHTML = Object.entries(this.estimasi).map(([id, val]) => `<div>📅 Laporan ID ${id}: target ${val}</div>`).join('');
+        }
+
+        renderAll() {
+            this.renderLeftGrid();
+            this.renderHistory();
+            this.renderKomentar();
+            this.updateDashboard();
+        }
+
+        setFilter(status) {
+            this.currentFilter = status;
+            document.getElementById('filterStatus').value = status;
+            this.renderLeftGrid();
+            const btnDiproses = document.getElementById('filterDiprosesBtn');
+            const btnSelesai = document.getElementById('filterSelesaiBtn');
+            const btnReset = document.getElementById('resetFilterBtn');
+            if (btnDiproses) btnDiproses.classList.remove('active');
+            if (btnSelesai) btnSelesai.classList.remove('active');
+            if (btnReset) btnReset.classList.remove('active');
+            if (status === 'Diproses' && btnDiproses) btnDiproses.classList.add('active');
+            else if (status === 'Selesai' && btnSelesai) btnSelesai.classList.add('active');
+            else if (btnReset) btnReset.classList.add('active');
+        }
+
+        updateDashboard() {
+            let statusCount = { Baru: 0, Diproses: 0, Selesai: 0 };
+            let deviceCount = {};
+            this.allReports.forEach(r => { statusCount[r.status]++; deviceCount[r.namaAlat] = (deviceCount[r.namaAlat] || 0) + 1; });
+            const ctx = document.getElementById('statusChart')?.getContext('2d');
+            if (ctx) {
+                if (this.statusChart) this.statusChart.destroy();
+                this.statusChart = new Chart(ctx, { type: 'bar', data: { labels: ['Baru', 'Diproses', 'Selesai'], datasets: [{ label: 'Jumlah', data: [statusCount.Baru, statusCount.Diproses, statusCount.Selesai], backgroundColor: ['#ff006e', '#f59e0b', '#10b981'] }] } });
+            }
+            const topDev = Object.entries(deviceCount).sort((a, b) => b[1] - a[1]).slice(0, 3).map(d => `${d[0]}: ${d[1]}x`).join('<br>');
+            document.getElementById('topDevices') && (document.getElementById('topDevices').innerHTML = topDev || '-');
+            const totalRatings = Object.values(this.ratings).length;
+            const avg = totalRatings > 0 ? (Object.values(this.ratings).reduce((a, b) => a + b, 0) / totalRatings).toFixed(1) : 0;
+            document.getElementById('avgRating') && (document.getElementById('avgRating').innerHTML = `⭐ ${avg}/5 (${totalRatings} rating)`);
+            const ratingHtml = Object.entries(this.ratings).map(([id, val]) => `Laporan ID ${id}: ${val}⭐`).join('<br>');
+            document.getElementById('ratingHistory') && (document.getElementById('ratingHistory').innerHTML = ratingHtml || 'Belum ada rating');
+        }
+
+        renderFeedbacks() {
+            const container = document.getElementById('feedbackList');
+            if (!container) return;
+            if (this.feedbacks.length === 0) { container.innerHTML = '<div>Tidak ada feedback</div>'; return; }
+            let html = '';
+            for (const f of this.feedbacks.slice().reverse()) {
+                html += `<div class="feedback-item"><div><strong>${this.escapeHtml(f.name || 'Anonim')}</strong> <small>${f.timestamp}</small></div><div>💬 ${this.escapeHtml(f.message)}</div></div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        addFeedback(name, message) {
+            if (!message.trim()) { this.showToast("Isi pesan feedback", "⚠️"); return false; }
+            const newFeedback = { id: Date.now(), name: name.trim() || "Anonim", message: message.trim(), timestamp: this.formatDateTime() };
+            this.feedbacks.unshift(newFeedback);
+            this.saveAll();
+            this.renderFeedbacks();
+            this.showToast("Feedback berhasil dikirim! Terima kasih.", "📝");
+            this.addHistory('feedback', `Feedback dari ${newFeedback.name}: "${newFeedback.message.substring(0, 50)}..."`);
+            return true;
+        }
+
+        clearAllFeedbacks() {
+            if (!this.isAdmin) { this.showToast("Hanya admin yang dapat menghapus feedback!", "⚠️"); return; }
+            if (confirm("Hapus semua feedback?")) { this.feedbacks = []; this.saveAll(); this.renderFeedbacks(); this.showToast("Semua feedback dihapus", "🗑️"); }
+        }
+
+        // ========== ADMIN ==========
+        checkAdminStatus() {
+            const saved = sessionStorage.getItem("lab_admin");
+            this.isAdmin = (saved === "true");
+            const loginBtn = document.getElementById('adminLoginBtn');
+            const logoutBtn = document.getElementById('adminLogoutBtn');
+            const adminStatus = document.getElementById('adminStatus');
+            const deleteAllBtn = document.getElementById('deleteAllBtn');
+            if (this.isAdmin) {
+                if (loginBtn) loginBtn.classList.add('hidden');
+                if (logoutBtn) logoutBtn.classList.remove('hidden');
+                if (adminStatus) adminStatus.classList.remove('hidden');
+                if (deleteAllBtn) deleteAllBtn.style.display = 'inline-flex';
+            } else {
+                if (loginBtn) loginBtn.classList.remove('hidden');
+                if (logoutBtn) logoutBtn.classList.add('hidden');
+                if (adminStatus) adminStatus.classList.add('hidden');
+                if (deleteAllBtn) deleteAllBtn.style.display = 'none';
+            }
+            this.renderAll();
+        }
+
+        adminLogin() {
+            const pwd = prompt("Masukkan password admin:");
+            if (pwd === "admin123") {
+                sessionStorage.setItem("lab_admin", "true");
+                this.checkAdminStatus();
+                this.showToast("Login admin berhasil! Anda sekarang memiliki akses penuh.", "🔓");
+            } else {
+                this.showToast("Password salah! Akses ditolak.", "❌");
+                this.playVoiceWrongPassword();
+            }
+        }
+
+        adminLogout() {
+            sessionStorage.removeItem("lab_admin");
+            this.checkAdminStatus();
+            this.showToast("Anda telah keluar dari mode admin.", "🔒");
+        }
+
+        // ========== EVENT HANDLERS ==========
+        attachEventListeners() {
+            // Dark mode
+            document.getElementById('darkModeToggle')?.addEventListener('click', () => document.body.classList.toggle('light'));
+            // Admin
+            document.getElementById('adminLoginBtn')?.addEventListener('click', () => this.adminLogin());
+            document.getElementById('adminLogoutBtn')?.addEventListener('click', () => this.adminLogout());
+            // Form laporan
+            document.getElementById('quickReportForm')?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const namaPelapor = document.getElementById('quickNamaPelapor').value;
+                const namaAlat = document.getElementById('quickAlatName').value;
+                const lokasi = document.getElementById('quickLokasi').value;
+                const priority = document.getElementById('quickPriority').value;
+                const deskripsi = document.getElementById('quickDeskripsi').value;
+                const tanggal = document.getElementById('quickTanggal').value;
+                if (this.addReport(namaPelapor, namaAlat, lokasi, deskripsi, tanggal, priority)) document.getElementById('quickReportForm').reset();
+            });
+            // Filter
+            document.getElementById('filterStatus')?.addEventListener('change', (e) => this.setFilter(e.target.value));
+            document.getElementById('filterDiprosesBtn')?.addEventListener('click', () => this.setFilter('Diproses'));
+            document.getElementById('filterSelesaiBtn')?.addEventListener('click', () => this.setFilter('Selesai'));
+            document.getElementById('resetFilterBtn')?.addEventListener('click', () => this.setFilter('semua'));
+            // Search
+            document.getElementById('searchBtn')?.addEventListener('click', () => {
+                const kw = document.getElementById('searchInput').value.toLowerCase();
+                const start = document.getElementById('filterStartDate').value;
+                const end = document.getElementById('filterEndDate').value;
+                const filtered = this.allReports.filter(r => (r.namaPelapor.toLowerCase().includes(kw) || r.namaAlat.toLowerCase().includes(kw)) && (!start || r.tanggal >= start) && (!end || r.tanggal <= end));
+                this.renderLeftGrid(filtered);
+            });
+            // Delete all
+            document.getElementById('deleteAllBtn')?.addEventListener('click', () => this.deleteAllReports());
+            // Export
+            document.getElementById('exportExcelBtn')?.addEventListener('click', () => {
+                let csv = "ID,Nama Pelapor,Alat,Lokasi,Deskripsi,Tanggal,Status,Prioritas\n" + this.allReports.map(r => `${r.id},${r.namaPelapor},${r.namaAlat},${r.lokasi},${r.deskripsi},${r.tanggal},${r.status},${r.priority}`).join("\n");
+                let blob = new Blob([csv], { type: "text/csv" });
+                let a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = "laporan_lab.csv";
+                a.click();
+            });
+            document.getElementById('exportPDFBtn')?.addEventListener('click', () => {
+                html2canvas(document.querySelector('.container')).then(canvas => {
+                    let a = document.createElement('a');
+                    a.download = 'dashboard.png';
+                    a.href = canvas.toDataURL();
+                    a.click();
+                });
+            });
+            document.getElementById('genMonthlyBtn')?.addEventListener('click', () => {
+                let month = document.getElementById('monthPicker').value;
+                if (!month) return;
+                let [year, monthNum] = month.split('-');
+                let filtered = this.allReports.filter(r => r.tanggal.startsWith(year) && r.tanggal.split('-')[1] == monthNum);
+                document.getElementById('monthlyReport').innerHTML = `<p>Total laporan: ${filtered.length}</p><ul>${filtered.map(r => `<li>${r.tanggal} - ${r.namaAlat} (${r.status})</li>`).join('')}</ul>`;
+            });
+            document.getElementById('notifBtn')?.addEventListener('click', () => { if (window.Notification && Notification.permission !== 'granted') Notification.requestPermission(); else alert("Notifikasi sudah diizinkan"); });
+            // Feedback
+            document.getElementById('submitFeedbackBtn')?.addEventListener('click', () => {
+                let name = document.getElementById('feedbackName').value;
+                let msg = document.getElementById('feedbackText').value;
+                if (this.addFeedback(name, msg)) { document.getElementById('feedbackText').value = ''; document.getElementById('feedbackName').value = ''; }
+            });
+            document.getElementById('clearFeedbackBtn')?.addEventListener('click', () => this.clearAllFeedbacks());
+            // Upload foto
+            document.getElementById('uploadPhotoBtn')?.addEventListener('click', () => document.getElementById('photoInput').click());
+            document.getElementById('photoInput')?.addEventListener('change', (e) => {
+                let file = e.target.files[0];
+                if (file) {
+                    let reader = new FileReader();
+                    reader.onload = ev => { this.photos['temp'] = ev.target.result; document.getElementById('photoName').innerText = file.name; };
+                    reader.readAsDataURL(file);
+                }
+            });
+            // Delegasi event untuk tombol proses/selesai/hapus di dalam laporan
+            document.body.addEventListener('click', (e) => {
+                let target = e.target;
+                let id = parseInt(target.getAttribute('data-id'));
+                if (target.classList.contains('btn-process')) { if (id) this.changeStatusToProcess(id); }
+                if (target.classList.contains('btn-complete')) { if (id) this.changeStatusToComplete(id); }
+                if (target.classList.contains('btn-delete')) { if (id) this.deleteReportById(id); }
+            });
+            // Menu switching
+            const menus = ['laporan', 'dashboard', 'export', 'bulanan', 'rating', 'feedback'];
+            document.querySelectorAll('.menu-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const menu = btn.dataset.menu;
+                    menus.forEach(m => {
+                        const el = document.getElementById(`menu${m.charAt(0).toUpperCase() + m.slice(1)}`);
+                        if (el) el.classList.add('hidden');
+                    });
+                    document.getElementById(`menu${menu.charAt(0).toUpperCase() + menu.slice(1)}`).classList.remove('hidden');
+                    document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    if (menu === 'dashboard' || menu === 'rating') this.updateDashboard();
+                    if (menu === 'feedback') this.renderFeedbacks();
+                });
+            });
+        }
+
+        init() {
+            this.loadData();
+            this.checkAdminStatus();
+            this.attachEventListeners();
+            this.setFilter('semua');
+            // Aktifkan audio context setelah user klik pertama
+            document.body.addEventListener('click', () => {
+                if (this.audioContext && this.audioContext.state === 'suspended') this.audioContext.resume();
+            });
+            // Tambahkan global reference untuk pemanggilan rating dari HTML
+            window.app = this;
         }
     }
-    function init(){
-        loadHistory(); loadInitialData(); loadFeedbacks(); renderAll(); setFilter('semua');
-        checkAdminStatus();
-        document.body.addEventListener('click',()=>{ if(audioContext && audioContext.state==='suspended') audioContext.resume(); });
-    }
-    init();
+
+    // Mulai aplikasi OOP
+    const app = new LabReportSystem();
 </script>
 </body>
 </html>
+```
